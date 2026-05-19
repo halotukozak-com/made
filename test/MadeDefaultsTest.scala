@@ -12,16 +12,19 @@ class MadeDefaultsTest extends munit.FunSuite:
         type Label = "x"
         type Metadata = EmptyTuple
         type OuterType = WithDefaults
+        type Index = 0
       } *: MadeFieldElem {
         type Type = String
         type Label = "y"
         type Metadata = EmptyTuple
         type OuterType = WithDefaults
+        type Index = 1
       } *: MadeFieldElem {
         type Type = Boolean
         type Label = "z"
         type Metadata = EmptyTuple
         type OuterType = WithDefaults
+        type Index = 2
       } *: EmptyTuple
     } = Made.derived[WithDefaults]
 
@@ -42,11 +45,13 @@ class MadeDefaultsTest extends munit.FunSuite:
         type Label = "a"
         type Metadata = EmptyTuple
         type OuterType = AllDefaults
+        type Index = 0
       } *: MadeFieldElem {
         type Type = String
         type Label = "b"
         type Metadata = EmptyTuple
         type OuterType = AllDefaults
+        type Index = 1
       } *: EmptyTuple
     } = Made.derived[AllDefaults]
 
@@ -66,11 +71,13 @@ class MadeDefaultsTest extends munit.FunSuite:
         type Label = "required"
         type Metadata = EmptyTuple
         type OuterType = MixedDefaults
+        type Index = 0
       } *: MadeFieldElem {
         type Type = String
         type Label = "optional"
         type Metadata = EmptyTuple
         type OuterType = MixedDefaults
+        type Index = 1
       } *: EmptyTuple
     } = Made.derived[MixedDefaults]
 

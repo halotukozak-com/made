@@ -153,6 +153,10 @@ sealed trait MadeFieldElem extends MadeElem:
   /** Reads this field's value from an instance of the declaring type. */
   def apply(outer: OuterType): Type
 
+  /** Zero-based position of this field in the declaring product's constructor parameter list. */
+  type Index <: Int & Singleton
+  def index: Index
+
   /**
    * Resolves a default value for this field using the following priority chain (first match wins):
    *
@@ -168,6 +172,7 @@ sealed trait MadeFieldElem extends MadeElem:
 object MadeFieldElem:
   type Of[T] = MadeFieldElem { type Type = T }
   type OuterOf[Outer] = MadeFieldElem { type OuterType = Outer }
+  type IndexOf[I <: Int & Singleton] = MadeFieldElem { type Index = I }
 
 // workaround for https://github.com/scala/scala3/issues/25245
 private sealed trait MadeFieldElemWorkaround[Outer, Elem] extends MadeFieldElem:
@@ -299,7 +304,7 @@ object Made:
     val tTpe = TypeRepr.of[T]
     val tSymbol = tTpe.typeSymbol
 
-    val generatedElems = for
+    val generatedElems = (for
       member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct.sortBy(_.pos)
       if member.hasOrInheritsAnnotationOf[generated]
       _ = if !(member.isValDef || member.isDefDef) then
@@ -315,43 +320,70 @@ object Made:
             paramList <- paramLists
             param <- paramList
           do if !param.flags.is(Flags.EmptyFlags) then symbolInfo(param).dbg // todo
-    yield
+    yield member).zipWithIndex.map { (member, idx) =>
       val elemTpe = tTpe.memberType(member).widen
 
-      (elemTpe.asType, labelTypeOf(member, member.name), metaTypeOf(member)).runtimeChecked match
-        case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
+      (
+        elemTpe.asType,
+        labelTypeOf(member, member.name),
+        metaTypeOf(member),
+        ConstantType(IntConstant(idx)).asType,
+      ).runtimeChecked match
+        case (
+              '[elemTpe],
+              '[type elemLabel <: String; elemLabel],
+              '[type meta <: Tuple; meta],
+              '[type idxTpe <: Int & scala.Singleton; idxTpe],
+            ) =>
           '{
             new GeneratedMadeElemWorkaround[T, elemTpe]:
               type Label = elemLabel
               type Metadata = meta
+              type Index = idxTpe
+              def index: idxTpe = ${ Literal(IntConstant(idx)).asExprOf[idxTpe] }
               def apply(outer: T): elemTpe = ${ '{ outer }.asTerm.select(member).asExprOf[elemTpe] }
             : GeneratedMadeElem {
               type Type = elemTpe
               type Label = elemLabel
               type Metadata = meta
               type OuterType = T
+              type Index = idxTpe
             }
           }
+    }
 
     def singleCaseFieldOf(symbol: Symbol): Symbol = symbol.caseFields match
       case field :: Nil => field
       case _ => report.errorAndAbort(s"Expected a single case field for ${symbol.name}")
 
-    def madeFieldOf(field: Symbol): Expr[MadeFieldElem] =
-      (field.termRef.widen.asType, labelTypeOf(field, field.name), metaTypeOf(field)).runtimeChecked match
-        case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Tuple; fieldMeta]) =>
+    def madeFieldOf(field: Symbol, idx: Int = 0): Expr[MadeFieldElem] =
+      (
+        field.termRef.widen.asType,
+        labelTypeOf(field, field.name),
+        metaTypeOf(field),
+        ConstantType(IntConstant(idx)).asType,
+      ).runtimeChecked match
+        case (
+              '[fieldType],
+              '[type elemLabel <: String; elemLabel],
+              '[type fieldMeta <: Tuple; fieldMeta],
+              '[type idxTpe <: Int & scala.Singleton; idxTpe],
+            ) =>
           '{
             new MadeFieldElemWorkaround[T, fieldType]:
               type Label = elemLabel
               type Metadata = fieldMeta
+              type Index = idxTpe
 
               def apply(outer: T): fieldType = ${ '{ outer }.asTerm.select(field).asExprOf[fieldType] }
-              def default = ${ defaultOf[fieldType](0, field) }
+              def index: idxTpe = ${ Literal(IntConstant(idx)).asExprOf[idxTpe] }
+              def default = ${ defaultOf[fieldType](idx, field) }
             : MadeFieldElem {
               type Type = fieldType
               type Label = elemLabel
               type Metadata = fieldMeta
               type OuterType = T
+              type Index = idxTpe
             }
           }
 
@@ -518,22 +550,33 @@ object Made:
             val (exprs, names) = tSymbol.caseFields.zipWithIndex
               .zip(traverseTuple(Type.of[mirroredElemTypes]))
               .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
-                case ((exprs, names), ((fieldSymbol, index), '[fieldTpe])) =>
-                  (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
-                    case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
+                case ((exprs, names), ((fieldSymbol, idx), '[fieldTpe])) =>
+                  (
+                    labelTypeOf(fieldSymbol, fieldSymbol.name),
+                    metaTypeOf(fieldSymbol),
+                    ConstantType(IntConstant(idx)).asType,
+                  ).runtimeChecked match
+                    case (
+                          '[type elemLabel <: String; elemLabel],
+                          '[type meta <: Tuple; meta],
+                          '[type idxTpe <: Int & scala.Singleton; idxTpe],
+                        ) =>
                       val expr = '{
                         new MadeFieldElemWorkaround[T, fieldTpe]:
                           type Label = elemLabel
                           type Metadata = meta
+                          type Index = idxTpe
 
                           def apply(outer: T): fieldTpe =
                             ${ '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe] }
-                          def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
+                          def index: idxTpe = ${ Literal(IntConstant(idx)).asExprOf[idxTpe] }
+                          def default = ${ defaultOf[fieldTpe](idx, fieldSymbol) }
                         : MadeFieldElem {
                           type Type = fieldTpe
                           type Label = elemLabel
                           type Metadata = meta
                           type OuterType = T
+                          type Index = idxTpe
                         }
                       }
                       (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))

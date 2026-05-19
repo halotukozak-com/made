@@ -14,11 +14,13 @@ class GeneratedAnnotationTest extends munit.FunSuite:
       type Label = "ab"
       type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = Prod
+      type Index = 0
     } *: GeneratedMadeElem {
       type Type = Int
       type Label = "len"
       type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = Prod
+      type Index = 1
     } *: EmptyTuple
 
     summon[mirror.GeneratedElems =:= Expected]
@@ -37,6 +39,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
       type Label = "upper"
       type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = VC
+      type Index = 0
     } *: EmptyTuple
 
     summon[mirror.GeneratedElems =:= Expected]
@@ -53,6 +56,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
       type Label = "const"
       type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = SumADT
+      type Index = 0
     } *: EmptyTuple
 
     summon[mirror.GeneratedElems =:= Expected]
@@ -70,6 +74,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
       type Label = "info"
       type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = GenEnum
+      type Index = 0
     } *: EmptyTuple
 
     summon[mirror.GeneratedElems =:= Expected]
@@ -87,6 +92,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
       type Label = "id"
       type Metadata = (Meta @generated) *: EmptyTuple
       type OuterType = GenObj.type
+      type Index = 0
     } *: EmptyTuple
 
     summon[mirror.GeneratedElems =:= Expected]
