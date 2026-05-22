@@ -14,12 +14,5 @@ class FromMapTest extends munit.FunSuite:
     assert(bob == User("Bob", 25, Some("Cracow")))
   }
 
-//  todo
-//  type Bill = (amount: Double, @whenAbsent(0.1) tip:  Double)
-//
-//  test ("named tuple"){
-//    given FromMap[Bill] = FromMap.derived
-//
-//    val bill = summon[FromMap[Bill]].fromMap(Map("amount" -> 67.0))
-//    assert(bill == (67.0, 0.1))
-//  }
+  // Named-tuple coverage (e.g. `type Bill = (amount: Double, @whenAbsent(0.1) tip: Double)`)
+  // is blocked by the named-tuple deriver gap tracked in EdgeCaseTypesTest.
