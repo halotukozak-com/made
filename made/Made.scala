@@ -248,56 +248,6 @@ object MadeElem:
   type ExtractMeta[M /* <: MadeElem */ ] <: Tuple = M match
     case MetaOf[meta] => meta
 
-// $COVERAGE-OFF$
-/**
- * Members of `tSymbol` annotated with `@generated`, validated and lifted into the
- * `GeneratedMadeElem` runtime representation. Errors out on a `@generated` member that is not
- * a `val` or `def`, or on a `def` that takes parameters.
- */
-private def buildGeneratedElems[T: Type](
-  using quotes: Quotes,
-)(
-  utils: MacroUtils[quotes.type],
-  tTpe: quotes.reflect.TypeRepr,
-  tSymbol: quotes.reflect.Symbol,
-): List[Expr[GeneratedMadeElem]] =
-  import quotes.reflect.*
-  import utils.*
-  val members = (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct.sortBy(_.pos)
-  members.iterator
-    .filter(_.hasOrInheritsAnnotationOf[generated])
-    .map: member =>
-      if !(member.isValDef || member.isDefDef) then
-        report.errorAndAbort(
-          "@generated can only be applied to vals and defs.",
-          member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
-        )
-      member.paramSymss match
-        case Nil => // val or zero-arg def
-        case List(Nil) => // def with ()
-        case _ =>
-          report.errorAndAbort(
-            s"@generated cannot be applied to methods with parameters: ${member.name}",
-            member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
-          )
-      val elemTpe = tTpe.memberType(member).widen
-      (elemTpe.asType, labelTypeOf(member, member.name), metaTypeOf(member)).runtimeChecked match
-        case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
-          '{
-            new GeneratedMadeElemWorkaround[T, elemTpe]:
-              type Label = elemLabel
-              type Metadata = meta
-              def apply(outer: T): elemTpe = ${ '{ outer }.asTerm.select(member).asExprOf[elemTpe] }
-            : GeneratedMadeElem {
-              type Type = elemTpe
-              type Label = elemLabel
-              type Metadata = meta
-              type OuterType = T
-            }
-          }
-    .toList
-// $COVERAGE-ON$
-
 object Made:
   type Of[T] = Made { type Type = T }
   type ProductOf[T] = Made.Product { type Type = T }
@@ -344,7 +294,7 @@ object Made:
   // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] =
     import quotes.reflect.*
-    val utils = new MacroUtils[quotes.type]
+    given utils: MacroUtils[quotes.type] = new MacroUtils[quotes.type]
     import utils.*
 
     // dealiasKeepOpaques unfolds transparent aliases (e.g. `type AliasFoo = Foo`) so that
@@ -352,7 +302,42 @@ object Made:
     val tTpe = TypeRepr.of[T].dealiasKeepOpaques
     val tSymbol = tTpe.typeSymbol
 
-    val generatedElems = buildGeneratedElems[T](utils, tTpe, tSymbol)
+    def buildGeneratedElems: List[Expr[GeneratedMadeElem]] =
+      val members = (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct.sortBy(_.pos)
+      members.iterator
+        .filter(_.hasOrInheritsAnnotationOf[generated])
+        .map: member =>
+          if !(member.isValDef || member.isDefDef) then
+            report.errorAndAbort(
+              "@generated can only be applied to vals and defs.",
+              member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
+            )
+          member.paramSymss match
+            case Nil => // val or zero-arg def
+            case List(Nil) => // def with ()
+            case _ =>
+              report.errorAndAbort(
+                s"@generated cannot be applied to methods with parameters: ${member.name}",
+                member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
+              )
+          val elemTpe = tTpe.memberType(member).widen
+          (elemTpe.asType, labelTypeOf(member, member.name), metaTypeOf(member)).runtimeChecked match
+            case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
+              '{
+                new GeneratedMadeElemWorkaround[T, elemTpe]:
+                  type Label = elemLabel
+                  type Metadata = meta
+                  def apply(outer: T): elemTpe = ${ '{ outer }.asTerm.select(member).asExprOf[elemTpe] }
+                : GeneratedMadeElem {
+                  type Type = elemTpe
+                  type Label = elemLabel
+                  type Metadata = meta
+                  type OuterType = T
+                }
+              }
+        .toList
+
+    val generatedElems = buildGeneratedElems
 
     def singleCaseFieldOf(symbol: Symbol): Symbol = symbol.caseFields match
       case field :: Nil => field
