@@ -414,3 +414,97 @@ object Done:
             override val operations: Operations = $operationsExpr
         }
 // $COVERAGE-ON$
+
+extension [Handlers <: Tuple](handlers: Handlers)
+  /**
+   * Synthesizes a `Target` instance whose i-th operation (in [[Done.Operations]] order) is implemented
+   * by the i-th handler of this tuple — each handler an `op.Args => op.OutputType` function. The
+   * inverse of [[Done.derived]]: `derived` reads a `T` into a mirror; `to` builds a `T` from per-op
+   * handlers. `Handlers` is expected to be `Tuple.Map[done.Operations, [Op] =>> Op#Args => Op#OutputType]`.
+   */
+  transparent inline def to[Target](using Done.Of[Target]): Target =
+    ${ materializeImpl[Target, Handlers]('handlers) }
+
+// $COVERAGE-OFF$
+private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
+  handlers: Expr[Handlers],
+)(using quotes: Quotes,
+): Expr[Target] =
+  import quotes.reflect.*
+  val utils = new MacroUtils[quotes.type]
+  import utils.*
+
+  val tTpe = TypeRepr.of[Target]
+  val members = tTpe.userDeclaredMembers
+
+  val parents =
+    if tTpe.typeSymbol.flags.is(Flags.Trait) then List(TypeTree.of[Object], TypeTree.of[Target])
+    else List(TypeTree.of[Target])
+
+  def decls(cls: Symbol): List[Symbol] =
+    members.map(m => Symbol.newMethod(cls, m.name, tTpe.memberType(m), Flags.Override, Symbol.noSymbol))
+
+  val clsSym = Symbol.newClass(
+    Symbol.spliceOwner,
+    Symbol.freshName("Materialized"),
+    parents.map(_.tpe),
+    decls,
+    selfType = None,
+  )
+
+  def flattenParamTypes(mt: TypeRepr): List[(String, TypeRepr)] = mt match
+    case MethodType(pnames, pts, res) => pnames.zip(pts) ++ flattenParamTypes(res)
+    case PolyType(_, _, res) => flattenParamTypes(res)
+    case _ => Nil
+
+  @tailrec
+  def resultOf(mt: TypeRepr): Type[?] = mt match
+    case MethodType(_, _, res) => resultOf(res)
+    case PolyType(_, _, res) => resultOf(res)
+    case other => other.asType
+
+  def iMethod(index : Int) = TypeRepr.of[Handlers].typeSymbol.fieldMember(s"_${index + 1}")
+
+  def methodBody(argss: List[List[Tree]], index: Int, member: Symbol): Expr[?] =
+    val flatArgs: List[Term] = argss.flatten.collect { case t: Term => t }
+    val memberTpe = tTpe.memberType(member).widen
+    val (paramNames, paramTpes) =
+      flattenParamTypes(memberTpe).map((name, tpe) => (ConstantType(StringConstant(name)), tpe)).unzip
+
+    val outTpe = resultOf(memberTpe)
+    val argsTpe: Option[Type[? <: AnyNamedTuple]] =
+      if paramTpes.isEmpty then None
+      else
+        val tupleN = paramTpes.size match
+          case 0 => wontHappen
+          case 1 => TypeRepr.of[Tuple1] // for some reason
+          case n => defn.TupleClass(n).typeRef
+        (tupleN.appliedTo(paramNames).asType, tupleN.appliedTo(paramTpes).asType) match
+          case ('[type names <: Tuple; names], '[type types <: Tuple; types]) => Some(Type.of[NamedTuple[names, types]])
+          case _ => wontHappen
+
+    val value = handlers.asTerm.select(iMethod(index))
+    (argsTpe, outTpe) match
+      case (None, '[Unit]) =>
+        '{ ${ value.asExprOf[() => Any] }.apply(): Unit }
+      case (None, '[o]) =>
+        '{ ${ value.asExprOf[() => o] }.apply() }
+      case (Some('[a]), '[Unit]) =>
+        val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
+        '{ ${ value.asExprOf[a => Any] }.apply($argsTuple): Unit }
+      case (Some('[a]), '[o]) =>
+        val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
+        '{ ${ value.asExprOf[a => o] }.apply($argsTuple) }
+      case _ => wontHappen
+
+  val methodDefs: List[DefDef] = clsSym.declaredMethods.zipWithIndex.map:
+    case (methodSym, index) =>
+      DefDef(methodSym, argss => Some(methodBody(argss, index, members(index)).asTerm.changeOwner(methodSym)))
+
+  val clsDef = ClassDef(clsSym, parents, methodDefs)
+  val instance = Typed(
+    Apply(Select(New(TypeIdent(clsSym)), clsSym.primaryConstructor), Nil),
+    TypeTree.of[Target],
+  )
+  Block(List(clsDef), instance).asExprOf[Target]
+// $COVERAGE-ON$
