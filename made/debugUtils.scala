@@ -112,6 +112,18 @@ private[made] def typeReprInfo(
      |typeArgs: ${tpe.typeArgs}
      |""".stripMargin
 
+def compareTypeReprs(using quotes: Quotes)(a: quotes.reflect.TypeRepr, b: quotes.reflect.TypeRepr)(using pos: Position)
+  : Nothing = compareTypes(using a.asType, b.asType)
+
+def compareTypes[T <: AnyKind: Type, U <: AnyKind: Type](using Quotes, Position): Nothing =
+  import quotes.reflect.*
+  s"""
+     |expected:
+     |${typeReprInfo(TypeRepr.of[T])}
+     |provided:
+     |${typeReprInfo(TypeRepr.of[U])}
+     |""".stripMargin.dbg
+
 /**
  * Generates a string representation of a tree during macro expansion.
  *
@@ -142,22 +154,24 @@ private[made] def positionInfo(using quotes: Quotes)(pos: quotes.reflect.Positio
 inline private[made] def showAst(inline body: Any) = ${ showAstImpl('{ body }) }
 
 private def showAstImpl(body: Expr[Any])(using quotes: Quotes): Expr[Nothing] =
+  given Position = Position.NoPosition
   import quotes.reflect.*
   Printer.TreeShortCode.show(body.asTerm.underlyingArgument).dbg
 
 inline private[made] def showRawAst(inline body: Any) = ${ showRawAstImpl('{ body }) }
 
 private def showRawAstImpl(body: Expr[Any])(using quotes: Quotes): Expr[Nothing] =
+  given Position = Position.NoPosition
   import quotes.reflect.*
   Printer.TreeStructure.show(body.asTerm.underlyingArgument).dbg
 
 extension (s: String)
-  private[made] def dbg(using quotes: Quotes): Nothing =
+  private[made] def dbg(using position: Position)(using quotes: Quotes): Nothing =
     import quotes.reflect.*
-    report.errorAndAbort(s)
-  private[made] def info(using quotes: Quotes): String =
+    report.errorAndAbort(s"$s $position")
+  private[made] def info(using position: Position)(using quotes: Quotes): String =
     import quotes.reflect.*
-    report.info(s)
+    report.info(s"$s $position")
     s
 
 inline private[made] def raiseUnsupportedTypeFor[For <: AnyKind, Provided] = ${
@@ -180,11 +194,32 @@ private def raiseCannotDerivedTypeForImpl[For <: AnyKind: Type, Provided: Type](
 
 inline private[made] def showTypeRepr[T] = ${ showTypeReprImpl[T] }
 
-private def showTypeReprImpl[T: Type](using quotes: Quotes): Expr[Nothing] =
+private def showTypeReprImpl[T: Type](using Quotes): Expr[Nothing] =
+  given Position = Position.NoPosition
   import quotes.reflect.*
-
   typeReprInfo(TypeRepr.of[T]).dbg
 
-private[made] def wontHappen(using quotes: Quotes) =
-  quotes.reflect.report.errorAndAbort(s"This code should never be executed")
+private[made] def wontHappen(using Quotes, Position) =
+  s"This code should never be executed".dbg
 // $COVERAGE-ON$
+
+case class Position(
+  startLine: Int,
+  startColumn: Int,
+  sourceFile: String,
+):
+  override def toString: String = s"at line $startLine, column $startColumn in $sourceFile"
+
+object Position:
+  object NoPosition extends Position(-1, -1, "<no source file>"):
+    override def toString: String = "<no position>"
+  inline given Position = ${ impl }
+  private def impl(using quotes: Quotes): Expr[Position] =
+    val pos = quotes.reflect.Position.ofMacroExpansion
+    '{
+      Position(
+        startLine = ${ Expr(pos.startLine) },
+        startColumn = ${ Expr(pos.startColumn) },
+        sourceFile = ${ Expr(pos.sourceFile.name) },
+      )
+    }
