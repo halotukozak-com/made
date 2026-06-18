@@ -1,6 +1,8 @@
 package made
 
+import scala.annotation.tailrec
 import scala.quoted.*
+import scala.NamedTuple.{AnyNamedTuple, NamedTuple}
 
 /**
  * Mirror for operation-centric types, describing the methods and fields of a type `T`
@@ -253,28 +255,9 @@ object Done:
       val applied = if argLists.isEmpty then sel else sel.appliedToArgss(argLists)
       applied.asExprOf[Out]
 
-    // `methodMembers` (unlike `declaredMethods`) includes inherited-not-overridden members, but it
-    // also pulls in members from universal/framework base types (Any/Object, and the synthetic
-    // `Product`/`Equals`/`Enum` surface on case classes and enums: hashCode, equals, ==, canEqual,
-    // productArity, productElement, ordinal, etc.). The filter below keeps only user-declared
-    // val/def operations and drops that noise by owner + synthetic/artifact flags.
-    val excludedOwners: Set[Symbol] = Set(
-      defn.AnyClass,
-      defn.AnyValClass,
-      TypeRepr.of[Object].typeSymbol,
-      TypeRepr.of[Product].typeSymbol,
-      TypeRepr.of[Equals].typeSymbol,
-      TypeRepr.of[scala.reflect.Enum].typeSymbol,
-    )
-
     val operations =
       for
-        member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct
-          .sortBy(_.pos.getOrElse(Position.ofMacroExpansion))
-        if member.isDefDef || member.isValDef
-        if !member.isClassConstructor
-        if !member.flags.is(Flags.Synthetic) && !member.flags.is(Flags.Artifact)
-        if !excludedOwners.contains(member.owner)
+        member <- userDeclaredMembers(tTpe)
         // A method with a default parameter value (`def op(x: Int = 5)`) gets a compiler-synthesized
         // `op$default$1` accessor on the SAME type (even when `op` itself is abstract/deferred)
         if !DefaultParamAccessorName.matches(member.name)
