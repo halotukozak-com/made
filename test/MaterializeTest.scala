@@ -11,15 +11,52 @@ class MaterializeTest extends munit.FunSuite:
     def magic: Int
     def message: String
 
-  test("todo"):
-    val handlers = (
-      () => "calc",
-      () => true,
+  // --- negative: compile-time evidence checks ---
+
+  test("too few handlers is rejected at compile time"):
+    val err = scala.compiletime.testing.typeCheckErrors(
+      """
+        val handlers = (() => "calc", () => true)
+        handlers.to[Calc]
+      """,
     )
-    val c: Calc = handlers.to[Calc]
-    assertEquals(c.add(2, 3), 5)
-    assertEquals(c.name, "calc")
-    assertEquals(c.ping(), true)
+    assert(err.nonEmpty)
+
+  test("too many handlers is rejected at compile time"):
+    val err = scala.compiletime.testing.typeCheckErrors(
+      """
+        val handlers = ((args: (a: Int, b: Int)) => args.a + args.b, () => "calc", () => true, () => "extra")
+        handlers.to[Calc]
+      """,
+    )
+    assert(err.nonEmpty)
+
+  test("wrong return type in handler is rejected at compile time"):
+    val err = scala.compiletime.testing.typeCheckErrors(
+      """
+        val handlers = ((args: (a: Int, b: Int)) => "wrong", () => "calc", () => true)
+        handlers.to[Calc]
+      """,
+    )
+    assert(err.nonEmpty)
+
+  test("wrong arg type in handler is rejected at compile time"):
+    val err = scala.compiletime.testing.typeCheckErrors(
+      """
+        val handlers = ((args: (a: String, b: Int)) => 0, () => "calc", () => true)
+        handlers.to[Calc]
+      """,
+    )
+    assert(err.nonEmpty)
+
+  test("using () handler for parametric method is rejected at compile time"):
+    val err = scala.compiletime.testing.typeCheckErrors(
+      """
+        val handlers = (() => 0, () => "calc", () => true)
+        handlers.to[Calc]
+      """,
+    )
+    assert(err.nonEmpty)
 
   test("materialize synthesizes a working instance from a tuple of per-op handlers"):
     val handlers = (
@@ -63,8 +100,8 @@ class MaterializeTest extends munit.FunSuite:
   test("materialize supports Unit-returning side-effectful methods"):
     val log = collection.mutable.ArrayBuffer.empty[String]
     val handlers = (
-      (args: (msg: String)) => log.append(args.msg),
-      () => log.append("tick"),
+      (args: (msg: String)) => { log.append(args.msg); () },
+      () => { log.append("tick"); () },
     )
     val u: UnitReturning = handlers.to[UnitReturning]
     u.log("hello")
@@ -90,4 +127,3 @@ class MaterializeTest extends munit.FunSuite:
     val v: Extended = handlers.to[Extended]
     assertEquals(v.fromBase, "from-base")
     assertEquals(v.own, 99)
-

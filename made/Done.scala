@@ -125,8 +125,14 @@ sealed trait DoneOperation:
 
 object DoneOperation:
   type Of[T] = DoneOperation { type OuterType = T }
+  type WithOutput[O] = DoneOperation { type OutputType = O }
+  type WithElems[IE <: Tuple] = DoneOperation { type InputElems = IE }
   type ExtractOf[X /* <: DoneOperation */ ] = X match
     case DoneOperation.Of[t] => t
+  type ExtractOutput[Op] = Op match
+    case WithOutput[o] => o
+  type ExtractInputElems[Op] <: Tuple = Op match
+    case WithElems[ie] => ie
 
   /**
    * Mix-in providing an ergonomic `apply(outer, arg)` shortcut for operations with exactly
@@ -175,12 +181,30 @@ sealed trait InputElem:
 
 object InputElem:
   type Of[T] = InputElem { type Type = T }
+  type LabelOf[l <: String] = InputElem { type Label = l }
   type ExtractOf[X /* <: InputElem */ ] = X match
     case InputElem.Of[t] => t
+  type ExtractLabel[E] <: String = E match
+    case LabelOf[l] => l
   type OuterOf[T] = InputElem { type OuterType = T }
 
 object Done:
   type Of[T] = Done { type Type = T }
+
+  /**
+   * Maps a tuple of [[DoneOperation]]s to the corresponding tuple of handler function types.
+   * Each operation with no parameters maps to `() => OutputType`; each operation with
+   * parameters maps to `(p1: T1, p2: T2, ...) => OutputType` (a named-tuple function).
+   */
+  type HandlerOf[Op] = DoneOperation.ExtractInputElems[Op] match
+    case EmptyTuple => () => DoneOperation.ExtractOutput[Op]
+    case _ =>
+      NamedTuple[
+        Tuple.Map[DoneOperation.ExtractInputElems[Op], InputElem.ExtractLabel],
+        Tuple.Map[DoneOperation.ExtractInputElems[Op], InputElem.ExtractOf],
+      ] => DoneOperation.ExtractOutput[Op]
+
+  type HandlersOf[Ops <: Tuple] = Tuple.Map[Ops, HandlerOf]
 
   /**
    * Type-safe entry point for [[DoneOperation.apply]] — enforces at compile time
@@ -400,12 +424,13 @@ object Done:
 
 extension [Handlers <: Tuple](handlers: Handlers)
   /**
-   * Synthesizes a `Target` instance whose i-th operation (in [[Done.Operations]] order) is implemented
-   * by the i-th handler of this tuple — each handler an `op.Args => op.OutputType` function. The
-   * inverse of [[Done.derived]]: `derived` reads a `T` into a mirror; `to` builds a `T` from per-op
-   * handlers. `Handlers` is expected to be `Tuple.Map[done.Operations, [Op] =>> Op#Args => Op#OutputType]`.
+   * Synthesizes a `Target` instance from a tuple of per-operation handlers.
+   * Each handler must match the corresponding operation in [[Done.Operations]] order:
+   * a no-parameter operation expects `() => OutputType`; a parametric operation expects
+   * `(p1: T1, ...) => OutputType` (named-tuple function). The [[Done.HandlersOf]] type
+   * alias encodes the precise expected type, and is checked at compile time via `=:=`.
    */
-  transparent inline def to[Target](using Done.Of[Target]): Target =
+  transparent inline def to[Target](using done: Done.Of[Target])(using Handlers =:= Done.HandlersOf[done.Operations]): Target =
     ${ materializeImpl[Target, Handlers]('handlers) }
 
 // $COVERAGE-OFF$
