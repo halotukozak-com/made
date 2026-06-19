@@ -1,6 +1,6 @@
 package made
 
-import scala.annotation.tailrec
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.quoted.*
 import scala.NamedTuple.{AnyNamedTuple, NamedTuple}
 
@@ -422,6 +422,22 @@ object Done:
         }
 // $COVERAGE-ON$
 
+@implicitNotFound(
+  "Handler tuple mismatch for target operations ${Ops}.\n" +
+    "  Found:    ${Handlers}\n" +
+    "  Expected: Done.HandlersOf[${Ops}]\n" +
+    "Each operation needs one handler (in declaration order):\n" +
+    "  • parameterless op  → () => OutType\n" +
+    "  • parametric op     → (p1: T1, p2: T2, ...) => OutType  (named-tuple argument)"
+)
+sealed trait ValidHandlers[Ops <: Tuple, Handlers <: Tuple]
+object ValidHandlers:
+  private val reusable = new ValidHandlers[EmptyTuple, EmptyTuple] {}
+
+  def refl[Ops <: Tuple, Handlers <: Tuple]: ValidHandlers[Ops, Handlers] =
+    reusable.asInstanceOf[ValidHandlers[Ops, Handlers]]
+  given [Ops <: Tuple, H <: Tuple](using H =:= Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
+
 extension [Handlers <: Tuple](handlers: Handlers)
   /**
    * Synthesizes a `Target` instance from a tuple of per-operation handlers.
@@ -430,7 +446,7 @@ extension [Handlers <: Tuple](handlers: Handlers)
    * `(p1: T1, ...) => OutputType` (named-tuple function). The [[Done.HandlersOf]] type
    * alias encodes the precise expected type, and is checked at compile time via `=:=`.
    */
-  transparent inline def to[Target](using done: Done.Of[Target])(using Handlers =:= Done.HandlersOf[done.Operations]): Target =
+  transparent inline def to[Target: Done.Of as done](using ValidHandlers[done.Operations, Handlers]): Target =
     ${ materializeImpl[Target, Handlers]('handlers) }
 
 // $COVERAGE-OFF$
@@ -471,7 +487,7 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     case PolyType(_, _, res) => resultOf(res)
     case other => other.asType
 
-  def iMethod(index : Int) = TypeRepr.of[Handlers].typeSymbol.fieldMember(s"_${index + 1}")
+  def iMethod(index: Int) = TypeRepr.of[Handlers].typeSymbol.fieldMember(s"_${index + 1}")
 
   def methodBody(argss: List[List[Tree]], index: Int, member: Symbol): Expr[?] =
     val flatArgs: List[Term] = argss.flatten.collect { case t: Term => t }
