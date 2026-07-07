@@ -1,4 +1,5 @@
-package made.annotation
+package made
+package annotation
 
 import scala.quoted.*
 
@@ -27,12 +28,10 @@ object whenAbsent:
     import quotes.reflect.*
 
     object DefaultValueMethod:
-      private val DefaultValueMethodName = """(.*)\$default\$(\d+)$""".r
-
       def unapply(s: Symbol): Option[Symbol] = s match
         case ms if ms.isDefDef =>
           ms.name match
-            case DefaultValueMethodName(actualMethodName: String, idx: String) =>
+            case DefaultParamAccessorName(actualMethodName: String, idx: String) =>
               val method = actualMethodName match
                 case "$lessinit$greater" =>
                   ms.owner.companionModule.companionClass.primaryConstructor

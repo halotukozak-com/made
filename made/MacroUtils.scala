@@ -53,6 +53,11 @@ extension (companion: Expr.type)
         case '{ type t <: Tuple; $tailExpr: t } =>
           '{ ${ headExpr.asExprOf[h] } *: ${ tailExpr.asExprOf[t] } }
 
+// Compiler-synthesized accessor for a defaulted parameter (e.g. `op$default$1` for
+// `def op(x: Int = 5)`). It carries no `Synthetic`/`Artifact` flag (confirmed via
+// `Symbol.flags.show`: only `Flags.Method`), so it can't be filtered out by flags alone.
+private[made] val DefaultParamAccessorName = """(.*)\$default\$(\d+)$""".r
+
 private[made] def nameOf[T: Type](using quotes: Quotes): String =
   import quotes.reflect.*
   val tpe = TypeRepr.of[T]

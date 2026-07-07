@@ -266,15 +266,7 @@ object Done:
       TypeRepr.of[Equals].typeSymbol,
       TypeRepr.of[scala.reflect.Enum].typeSymbol,
     )
-    // A method with a default parameter value (`def op(x: Int = 5)`) gets a compiler-synthesized
-    // `op$default$1` accessor on the SAME type (even when `op` itself is abstract/deferred — Scala 3
-    // trait methods with defaults get a callable `default` interface method for it). This accessor
-    // carries NEITHER `Flags.Synthetic` NOR `Flags.Artifact` (confirmed by inspecting
-    // `Symbol.flags.show` directly: `op$default$1 flags=Flags.Method`, indistinguishable from a
-    // genuine user method by flags alone), so it is NOT caught by the filter below and would
-    // otherwise be enumerated as its own spurious `DoneOperation`. Filter it by its compiler-mandated
-    // name shape instead.
-    val DefaultParamAccessor = """.*\$default\$\d+$""".r
+
     val operations =
       for
         member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct
@@ -283,7 +275,9 @@ object Done:
         if !member.isClassConstructor
         if !member.flags.is(Flags.Synthetic) && !member.flags.is(Flags.Artifact)
         if !excludedOwners.contains(member.owner)
-        if !DefaultParamAccessor.matches(member.name)
+        // A method with a default parameter value (`def op(x: Int = 5)`) gets a compiler-synthesized
+        // `op$default$1` accessor on the SAME type (even when `op` itself is abstract/deferred)
+        if !DefaultParamAccessorName.matches(member.name)
         opTpe = tTpe.memberType(member).widen
         extract(params, outputTpe) = opTpe.runtimeChecked
       yield
