@@ -498,6 +498,22 @@ class DoneTest extends munit.FunSuite:
     assertEquals(answerOp.apply(impl), 99)
   }
 
+  test("a method's synthesized $default$N accessor is not enumerated as its own operation") {
+    // Regression test: `op`'s compiler-generated `op$default$1` accessor carries neither
+    // Flags.Synthetic nor Flags.Artifact (it is a real, callable Scala 3 trait default method), so
+    // it used to leak through as a spurious extra DoneOperation alongside `op` and `other`.
+    val opOp *: otherOp *: EmptyTuple = Done.derived[WithDefaultParam].operations
+
+    assertEquals(opOp.label, "op")
+    assertEquals(otherOp.label, "other")
+
+    val impl: WithDefaultParam = new WithDefaultParam:
+      def op(z: Int): Int = z
+      def other(): Int = 0
+
+    assertEquals(opOp.apply(impl, Tuple1(5)), 5)
+  }
+
   test("apply invokes methods on a singleton object") {
     val done = Done.derived[MathTools.type]
     val zeroOp *: toTextOp *: EmptyTuple = done.operations
@@ -673,3 +689,10 @@ trait Calculator:
   def add(a: Int, b: Int): Int
   def mul(a: Int)(b: Int): Int
   def answer: Int
+
+// A method with a default parameter value gets a compiler-synthesized `<method>$default$N`
+// accessor on the SAME type (even though `op` itself is abstract) — it must NOT be enumerated as
+// its own DoneOperation.
+trait WithDefaultParam:
+  def op(z: Int = 99): Int
+  def other(): Int
