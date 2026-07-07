@@ -52,7 +52,7 @@ jobs:
           - platform: jvm
             args: ""
           - platform: scala-js
-            args: "--js-version 1.21.0"
+            args: "--js-version 1.22.0"
           - platform: scala-native
             args: "--native-version 0.5.11"
     steps:
