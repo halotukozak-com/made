@@ -266,6 +266,7 @@ object Done:
       TypeRepr.of[Equals].typeSymbol,
       TypeRepr.of[scala.reflect.Enum].typeSymbol,
     )
+
     val operations =
       for
         member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct
@@ -274,6 +275,9 @@ object Done:
         if !member.isClassConstructor
         if !member.flags.is(Flags.Synthetic) && !member.flags.is(Flags.Artifact)
         if !excludedOwners.contains(member.owner)
+        // A method with a default parameter value (`def op(x: Int = 5)`) gets a compiler-synthesized
+        // `op$default$1` accessor on the SAME type (even when `op` itself is abstract/deferred)
+        if !DefaultParamAccessorName.matches(member.name)
         opTpe = tTpe.memberType(member).widen
         extract(params, outputTpe) = opTpe.runtimeChecked
       yield

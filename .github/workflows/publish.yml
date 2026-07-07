@@ -68,7 +68,7 @@ jobs:
           jdoc="$(find "$PWD/.jvmdoc" -name 'made_3-*-javadoc.jar' | head -1)"
 
           # 2. JS artifacts (jar/sources/pom + checksums), unsigned and without a doc JAR.
-          scala-cli --power publish . --platform scala-js --js-version 1.21.0 \
+          scala-cli --power publish . --platform scala-js --js-version 1.22.0 \
             --doc=false --signer none --publish-repository "$PWD/.staging"
 
           # 3. Inject the reused javadoc into the made_sjs1_3 coordinate.
