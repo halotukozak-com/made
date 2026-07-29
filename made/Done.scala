@@ -423,12 +423,10 @@ object Done:
 // $COVERAGE-ON$
 
 @implicitNotFound(
-  "Handler tuple mismatch for target operations ${Ops}.\n" +
-    "  Found:    ${Handlers}\n" +
-    "  Expected: Done.HandlersOf[${Ops}]\n" +
-    "Each operation needs one handler (in declaration order):\n" +
+  "Handler tuple mismatch for target operations ${Ops}.\n" + "  Found:    ${Handlers}\n" +
+    "  Expected: Done.HandlersOf[${Ops}]\n" + "Each operation needs one handler (in declaration order):\n" +
     "  • parameterless op  → () => OutType\n" +
-    "  • parametric op     → (p1: T1, p2: T2, ...) => OutType  (named-tuple argument)"
+    "  • parametric op     → (p1: T1, p2: T2, ...) => OutType  (named-tuple argument)",
 )
 sealed trait ValidHandlers[Ops <: Tuple, Handlers <: Tuple]
 object ValidHandlers:

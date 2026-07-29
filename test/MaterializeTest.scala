@@ -100,8 +100,13 @@ class MaterializeTest extends munit.FunSuite:
   test("materialize supports Unit-returning side-effectful methods"):
     val log = collection.mutable.ArrayBuffer.empty[String]
     val handlers = (
-      (args: (msg: String)) => { log.append(args.msg); () },
-      () => { log.append("tick"); () },
+      (args: (msg: String)) =>
+        log.append(args.msg)
+        ()
+      ,
+      () =>
+        log.append("tick")
+        (),
     )
     val u: UnitReturning = handlers.to[UnitReturning]
     u.log("hello")
