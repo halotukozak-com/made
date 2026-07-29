@@ -130,9 +130,10 @@ object DoneOperation:
   type ExtractOf[X /* <: DoneOperation */ ] = X match
     case DoneOperation.Of[t] => t
   type ExtractOutput[Op] = Op match
-    case WithOutput[o] => o match
-      case Unit => Any
-      case _ => o
+    case WithOutput[o] =>
+      o match
+        case Unit => Any
+        case _ => o
   type ExtractInputElems[Op] <: Tuple = Op match
     case WithElems[ie] => ie
 
