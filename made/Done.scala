@@ -1,6 +1,8 @@
 package made
 
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.quoted.*
+import scala.NamedTuple.{AnyNamedTuple, NamedTuple}
 
 /**
  * Mirror for operation-centric types, describing the methods and fields of a type `T`
@@ -123,8 +125,17 @@ sealed trait DoneOperation:
 
 object DoneOperation:
   type Of[T] = DoneOperation { type OuterType = T }
+  type WithOutput[O] = DoneOperation { type OutputType = O }
+  type WithElems[IE <: Tuple] = DoneOperation { type InputElems = IE }
   type ExtractOf[X /* <: DoneOperation */ ] = X match
     case DoneOperation.Of[t] => t
+  type ExtractOutput[Op] = Op match
+    case WithOutput[o] =>
+      o match
+        case Unit => Any
+        case _ => o
+  type ExtractInputElems[Op] <: Tuple = Op match
+    case WithElems[ie] => ie
 
   /**
    * Mix-in providing an ergonomic `apply(outer, arg)` shortcut for operations with exactly
@@ -173,12 +184,30 @@ sealed trait InputElem:
 
 object InputElem:
   type Of[T] = InputElem { type Type = T }
+  type LabelOf[l <: String] = InputElem { type Label = l }
   type ExtractOf[X /* <: InputElem */ ] = X match
     case InputElem.Of[t] => t
+  type ExtractLabel[E] <: String = E match
+    case LabelOf[l] => l
   type OuterOf[T] = InputElem { type OuterType = T }
 
 object Done:
   type Of[T] = Done { type Type = T }
+
+  /**
+   * Maps a tuple of [[DoneOperation]]s to the corresponding tuple of handler function types.
+   * Each operation with no parameters maps to `() => OutputType`; each operation with
+   * parameters maps to `(p1: T1, p2: T2, ...) => OutputType` (a named-tuple function).
+   */
+  type HandlerOf[Op] = DoneOperation.ExtractInputElems[Op] match
+    case EmptyTuple => () => DoneOperation.ExtractOutput[Op]
+    case _ =>
+      NamedTuple[
+        Tuple.Map[DoneOperation.ExtractInputElems[Op], InputElem.ExtractLabel],
+        Tuple.Map[DoneOperation.ExtractInputElems[Op], InputElem.ExtractOf],
+      ] => DoneOperation.ExtractOutput[Op]
+
+  type HandlersOf[Ops <: Tuple] = Tuple.Map[Ops, HandlerOf]
 
   /**
    * Type-safe entry point for [[DoneOperation.apply]] — enforces at compile time
@@ -253,28 +282,9 @@ object Done:
       val applied = if argLists.isEmpty then sel else sel.appliedToArgss(argLists)
       applied.asExprOf[Out]
 
-    // `methodMembers` (unlike `declaredMethods`) includes inherited-not-overridden members, but it
-    // also pulls in members from universal/framework base types (Any/Object, and the synthetic
-    // `Product`/`Equals`/`Enum` surface on case classes and enums: hashCode, equals, ==, canEqual,
-    // productArity, productElement, ordinal, etc.). The filter below keeps only user-declared
-    // val/def operations and drops that noise by owner + synthetic/artifact flags.
-    val excludedOwners: Set[Symbol] = Set(
-      defn.AnyClass,
-      defn.AnyValClass,
-      TypeRepr.of[Object].typeSymbol,
-      TypeRepr.of[Product].typeSymbol,
-      TypeRepr.of[Equals].typeSymbol,
-      TypeRepr.of[scala.reflect.Enum].typeSymbol,
-    )
-
     val operations =
       for
-        member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct
-          .sortBy(_.pos.getOrElse(Position.ofMacroExpansion))
-        if member.isDefDef || member.isValDef
-        if !member.isClassConstructor
-        if !member.flags.is(Flags.Synthetic) && !member.flags.is(Flags.Artifact)
-        if !excludedOwners.contains(member.owner)
+        member <- userDeclaredMembers(tTpe)
         // A method with a default parameter value (`def op(x: Int = 5)`) gets a compiler-synthesized
         // `op$default$1` accessor on the SAME type (even when `op` itself is abstract/deferred)
         if !DefaultParamAccessorName.matches(member.name)
@@ -413,4 +423,124 @@ object Done:
 
             override val operations: Operations = $operationsExpr
         }
+// $COVERAGE-ON$
+
+@implicitNotFound(
+  "Handler tuple mismatch for target operations ${Ops}.\n" + "  Found:    ${Handlers}\n" +
+    "  Expected: Done.HandlersOf[${Ops}]\n" + "Each operation needs one handler (in declaration order):\n" +
+    "  • parameterless op  → () => OutType\n" +
+    "  • parametric op     → (p1: T1, p2: T2, ...) => OutType  (named-tuple argument)",
+)
+sealed trait ValidHandlers[Ops <: Tuple, Handlers <: Tuple]
+object ValidHandlers:
+  private val reusable = new ValidHandlers[EmptyTuple, EmptyTuple] {}
+
+  def refl[Ops <: Tuple, Handlers <: Tuple]: ValidHandlers[Ops, Handlers] =
+    reusable.asInstanceOf[ValidHandlers[Ops, Handlers]]
+  given [Ops <: Tuple, H <: Tuple](using H <:< Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
+
+extension [Handlers <: Tuple](handlers: Handlers)
+  /**
+   * Synthesizes a `Target` instance from a tuple of per-operation handlers.
+   * Each handler must match the corresponding operation in [[Done.Operations]] order:
+   * a no-parameter operation expects `() => OutputType`; a parametric operation expects
+   * `(p1: T1, ...) => OutputType` (named-tuple function). The [[Done.HandlersOf]] type
+   * alias encodes the precise expected type, and is checked at compile time via `=:=`.
+   */
+  transparent inline def to[Target: Done.Of as done](using ValidHandlers[done.Operations, Handlers]): Target =
+    ${ materializeImpl[Target, Handlers]('handlers) }
+
+// $COVERAGE-OFF$
+private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
+  handlers: Expr[Handlers],
+)(using quotes: Quotes,
+): Expr[Target] =
+  import quotes.reflect.*
+  val utils = new MacroUtils[quotes.type]
+  import utils.*
+
+  val tTpe = TypeRepr.of[Target]
+  val members = tTpe.userDeclaredMembers
+  val targetSymbol = tTpe.typeSymbol
+  val isTrait = targetSymbol.flags.is(Flags.Trait)
+
+  if !isTrait then
+    if targetSymbol.flags.is(Flags.Final) then
+      report.errorAndAbort(s"Cannot materialize ${tTpe.show}: only traits or non-final classes are supported")
+    val ctorParams = targetSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isType)
+    if ctorParams.nonEmpty then
+      report.errorAndAbort(
+        s"Cannot materialize ${tTpe.show}: class has constructor parameters (${ctorParams.map(_.name).mkString(", ")}), only parameterless classes or traits are supported",
+      )
+
+  val parents =
+    if isTrait then List(TypeTree.of[Object], TypeTree.of[Target])
+    else List(TypeTree.of[Target])
+
+  def decls(cls: Symbol): List[Symbol] =
+    members.map(m => Symbol.newMethod(cls, m.name, tTpe.memberType(m), Flags.Override, Symbol.noSymbol))
+
+  val clsSym = Symbol.newClass(
+    Symbol.spliceOwner,
+    Symbol.freshName("Materialized"),
+    parents.map(_.tpe),
+    decls,
+    selfType = None,
+  )
+
+  def flattenParamTypes(mt: TypeRepr): List[(String, TypeRepr)] = mt match
+    case MethodType(pnames, pts, res) => pnames.zip(pts) ++ flattenParamTypes(res)
+    case PolyType(_, _, res) => flattenParamTypes(res)
+    case _ => Nil
+
+  @tailrec
+  def resultOf(mt: TypeRepr): Type[?] = mt match
+    case MethodType(_, _, res) => resultOf(res)
+    case PolyType(_, _, res) => resultOf(res)
+    case other => other.asType
+
+  def iMethod(index: Int) = TypeRepr.of[Handlers].typeSymbol.fieldMember(s"_${index + 1}")
+
+  def methodBody(argss: List[List[Tree]], index: Int, member: Symbol): Expr[?] =
+    val flatArgs: List[Term] = argss.flatten.collect { case t: Term => t }
+    val memberTpe = tTpe.memberType(member).widen
+    val (paramNames, paramTpes) =
+      flattenParamTypes(memberTpe).map((name, tpe) => (ConstantType(StringConstant(name)), tpe)).unzip
+
+    val outTpe = resultOf(memberTpe)
+    val argsTpe: Option[Type[? <: AnyNamedTuple]] =
+      if paramTpes.isEmpty then None
+      else
+        val tupleN = paramTpes.size match
+          case 0 => wontHappen
+          case 1 => TypeRepr.of[Tuple1] // for some reason
+          case n => defn.TupleClass(n).typeRef
+        (tupleN.appliedTo(paramNames).asType, tupleN.appliedTo(paramTpes).asType) match
+          case ('[type names <: Tuple; names], '[type types <: Tuple; types]) => Some(Type.of[NamedTuple[names, types]])
+          case _ => wontHappen
+
+    val value = handlers.asTerm.select(iMethod(index))
+    (argsTpe, outTpe) match
+      case (None, '[Unit]) =>
+        '{ ${ value.asExprOf[() => Any] }.apply() }
+      case (None, '[o]) =>
+        '{ ${ value.asExprOf[() => o] }.apply() }
+      case (Some('[a]), '[Unit]) =>
+        val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
+        '{ ${ value.asExprOf[a => Any] }.apply($argsTuple) }
+      case (Some('[a]), '[o]) =>
+        val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
+        '{ ${ value.asExprOf[a => o] }.apply($argsTuple) }
+      case _ => wontHappen
+
+  val methodDefs: List[DefDef] = clsSym.declaredMethods.zipWithIndex.map:
+    case (methodSym, index) =>
+      DefDef(methodSym, argss => Some(methodBody(argss, index, members(index)).asTerm.changeOwner(methodSym)))
+
+  val clsDef = ClassDef(clsSym, parents, methodDefs)
+  val instance = Typed(
+    Apply(Select(New(TypeIdent(clsSym)), clsSym.primaryConstructor), Nil),
+    TypeTree.of[Target],
+  )
+  Block(List(clsDef), instance).asExprOf[Target]
 // $COVERAGE-ON$

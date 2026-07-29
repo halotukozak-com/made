@@ -182,6 +182,30 @@ private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
     yield ctorParam
     symbol :: ctorParam
 
+  // `methodMembers` (unlike `declaredMethods`) includes inherited-not-overridden members, but it
+  // also pulls in members from universal/framework base types (Any/Object, and the synthetic
+  // `Product`/`Equals`/`Enum` surface on case classes and enums: hashCode, equals, ==, canEqual,
+  // productArity, productElement, ordinal, etc.). This method keeps only user-declared
+  // val/def operations and drops that noise by owner + synthetic/artifact flags.
+  extension (tpe: TypeRepr)
+    def userDeclaredMembers: List[Symbol] =
+      val excluding = Set(
+        defn.AnyClass,
+        defn.AnyValClass,
+        TypeRepr.of[Object].typeSymbol,
+        TypeRepr.of[Product].typeSymbol,
+        TypeRepr.of[Equals].typeSymbol,
+        TypeRepr.of[scala.reflect.Enum].typeSymbol,
+      )
+      tpe.typeSymbol.fieldMembers.iterator
+        .concat(tpe.typeSymbol.methodMembers)
+        .distinct
+        .filter: m =>
+          (m.isDefDef || m.isValDef) && !m.isClassConstructor && !m.flags.is(Flags.Synthetic) &&
+            !m.flags.is(Flags.Artifact) && !excluding.contains(m.owner)
+        .toList
+        .sortBy(_.pos.getOrElse(Position.ofMacroExpansion))
+
   def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
     val syms = Iterator(sym) ++ sym.allOverriddenSymbols
     val res = syms.find(_.hasAnnotationOf[name]).flatMap(_.getAnnotationOf[name])
