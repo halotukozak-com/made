@@ -112,10 +112,16 @@ private[made] def typeReprInfo(
      |typeArgs: ${tpe.typeArgs}
      |""".stripMargin
 
-def compareTypeReprs(using quotes: Quotes)(a: quotes.reflect.TypeRepr, b: quotes.reflect.TypeRepr)(using pos: Position)
-  : Nothing = compareTypes(using a.asType, b.asType)
+private[made] def compareTypeReprs(
+  using quotes: Quotes,
+)(
+  a: quotes.reflect.TypeRepr,
+  b: quotes.reflect.TypeRepr,
+)(using pos: Position,
+): Nothing =
+  compareTypes(using a.asType, b.asType)
 
-def compareTypes[T <: AnyKind: Type, U <: AnyKind: Type](using Quotes, Position): Nothing =
+private[made] def compareTypes[T <: AnyKind: Type, U <: AnyKind: Type](using Quotes, Position): Nothing =
   import quotes.reflect.*
   s"""
      |expected:
@@ -203,14 +209,14 @@ private[made] def wontHappen(using Quotes, Position) =
   s"This code should never be executed".dbg
 // $COVERAGE-ON$
 
-case class Position(
+private[made] case class Position(
   startLine: Int,
   startColumn: Int,
   sourceFile: String,
 ):
   override def toString: String = s"at line $startLine, column $startColumn in $sourceFile"
 
-object Position:
+private[made] object Position:
   object NoPosition extends Position(-1, -1, "<no source file>"):
     override def toString: String = "<no position>"
   inline given Position = ${ impl }

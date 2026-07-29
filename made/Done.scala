@@ -458,9 +458,20 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
 
   val tTpe = TypeRepr.of[Target]
   val members = tTpe.userDeclaredMembers
+  val targetSymbol = tTpe.typeSymbol
+  val isTrait = targetSymbol.flags.is(Flags.Trait)
+
+  if !isTrait then
+    if targetSymbol.flags.is(Flags.Final) then
+      report.errorAndAbort(s"Cannot materialize ${tTpe.show}: only traits or non-final classes are supported")
+    val ctorParams = targetSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isType)
+    if ctorParams.nonEmpty then
+      report.errorAndAbort(
+        s"Cannot materialize ${tTpe.show}: class has constructor parameters (${ctorParams.map(_.name).mkString(", ")}), only parameterless classes or traits are supported",
+      )
 
   val parents =
-    if tTpe.typeSymbol.flags.is(Flags.Trait) then List(TypeTree.of[Object], TypeTree.of[Target])
+    if isTrait then List(TypeTree.of[Object], TypeTree.of[Target])
     else List(TypeTree.of[Target])
 
   def decls(cls: Symbol): List[Symbol] =
@@ -508,12 +519,12 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     val value = handlers.asTerm.select(iMethod(index))
     (argsTpe, outTpe) match
       case (None, '[Unit]) =>
-        '{ ${ value.asExprOf[() => Any] }.apply(): Unit }
+        '{ ${ value.asExprOf[() => Unit] }.apply() }
       case (None, '[o]) =>
         '{ ${ value.asExprOf[() => o] }.apply() }
       case (Some('[a]), '[Unit]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
-        '{ ${ value.asExprOf[a => Any] }.apply($argsTuple): Unit }
+        '{ ${ value.asExprOf[a => Unit] }.apply($argsTuple) }
       case (Some('[a]), '[o]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
         '{ ${ value.asExprOf[a => o] }.apply($argsTuple) }

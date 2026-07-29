@@ -1,15 +1,15 @@
 package made
 
+trait Calc:
+  def add(a: Int, b: Int): Int
+  def name: String
+  def ping(): Boolean
+
+trait Props:
+  def magic: Int
+  def message: String
+
 class MaterializeTest extends munit.FunSuite:
-
-  trait Calc:
-    def add(a: Int, b: Int): Int
-    def name: String
-    def ping(): Boolean
-
-  trait Props:
-    def magic: Int
-    def message: String
 
   // --- negative: compile-time evidence checks ---
 
@@ -102,11 +102,11 @@ class MaterializeTest extends munit.FunSuite:
     val handlers = (
       (args: (msg: String)) =>
         log.append(args.msg)
-        ()
+        ()//todo: () should not be required
       ,
       () =>
         log.append("tick")
-        (),
+        (),//todo: () should not be required
     )
     val u: UnitReturning = handlers.to[UnitReturning]
     u.log("hello")
