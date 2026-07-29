@@ -1,6 +1,6 @@
 //> using scala 3.8.4
 
-//> using test.dep org.scalameta::munit::1.3.3
+//> using test.dep org.scalameta::munit::1.3.4
 //> using test.dep org.scala-lang::scala3-compiler:3.8.4
 
 //> using options -deprecation -feature -new-syntax -unchecked
