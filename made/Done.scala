@@ -130,7 +130,9 @@ object DoneOperation:
   type ExtractOf[X /* <: DoneOperation */ ] = X match
     case DoneOperation.Of[t] => t
   type ExtractOutput[Op] = Op match
-    case WithOutput[o] => o
+    case WithOutput[o] => o match
+      case Unit => Any
+      case _ => o
   type ExtractInputElems[Op] <: Tuple = Op match
     case WithElems[ie] => ie
 
@@ -434,7 +436,7 @@ object ValidHandlers:
 
   def refl[Ops <: Tuple, Handlers <: Tuple]: ValidHandlers[Ops, Handlers] =
     reusable.asInstanceOf[ValidHandlers[Ops, Handlers]]
-  given [Ops <: Tuple, H <: Tuple](using H =:= Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
+  given [Ops <: Tuple, H <: Tuple](using H <:< Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
 
 extension [Handlers <: Tuple](handlers: Handlers)
   /**
@@ -519,12 +521,12 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     val value = handlers.asTerm.select(iMethod(index))
     (argsTpe, outTpe) match
       case (None, '[Unit]) =>
-        '{ ${ value.asExprOf[() => Unit] }.apply() }
+        '{ ${ value.asExprOf[() => Any] }.apply() }
       case (None, '[o]) =>
         '{ ${ value.asExprOf[() => o] }.apply() }
       case (Some('[a]), '[Unit]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
-        '{ ${ value.asExprOf[a => Unit] }.apply($argsTuple) }
+        '{ ${ value.asExprOf[a => Any] }.apply($argsTuple) }
       case (Some('[a]), '[o]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
         '{ ${ value.asExprOf[a => o] }.apply($argsTuple) }
