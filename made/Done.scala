@@ -499,8 +499,6 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     case PolyType(_, _, res) => resultOf(res)
     case other => other.asType
 
-  def iMethod(index: Int) = TypeRepr.of[Handlers].typeSymbol.fieldMember(s"_${index + 1}")
-
   def methodBody(argss: List[List[Tree]], index: Int, member: Symbol): Expr[?] =
     val flatArgs: List[Term] = argss.flatten.collect { case t: Term => t }
     val memberTpe = tTpe.memberType(member).widen
@@ -519,18 +517,22 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
           case ('[type names <: Tuple; names], '[type types <: Tuple; types]) => Some(Type.of[NamedTuple[names, types]])
           case _ => wontHappen
 
-    val value = handlers.asTerm.select(iMethod(index))
+    // `handlers`' element `index` is read via `productElement` (a plain `Product` member every
+    // tuple has), not via a `Handlers`-typed symbol lookup — so `Handlers` never needs to be a
+    // concrete `TupleN`: an unreduced `Tuple.Map`-based type (e.g. `Done.HandlersOf[Ops]`) works
+    // just as well as a caller-supplied literal tuple type.
+    val value: Expr[Any] = '{ $handlers.productElement(${ Expr(index) }) }
     (argsTpe, outTpe) match
       case (None, '[Unit]) =>
-        '{ ${ value.asExprOf[() => Any] }.apply() }
+        '{ $value.asInstanceOf[() => Any].apply() }
       case (None, '[o]) =>
-        '{ ${ value.asExprOf[() => o] }.apply() }
+        '{ $value.asInstanceOf[() => o].apply() }
       case (Some('[a]), '[Unit]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
-        '{ ${ value.asExprOf[a => Any] }.apply($argsTuple) }
+        '{ $value.asInstanceOf[a => Any].apply($argsTuple) }
       case (Some('[a]), '[o]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
-        '{ ${ value.asExprOf[a => o] }.apply($argsTuple) }
+        '{ $value.asInstanceOf[a => o].apply($argsTuple) }
       case _ => wontHappen
 
   val methodDefs: List[DefDef] = clsSym.declaredMethods.zipWithIndex.map:
