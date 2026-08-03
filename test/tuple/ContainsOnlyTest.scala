@@ -327,3 +327,25 @@ class ContainsOnlyTest extends munit.FunSuite:
   test("nested tuple containsOnly Any") {
     summon[((Int, Int), (String, String)) containsOnly Any]
   }
+
+  test("Tuple.Concat preserves containsOnly") {
+    val tuple1 = ("one", "two", "three")
+    val tuple2 = ("four", "five")
+
+    summon[Tuple.Concat[tuple1.type, tuple2.type] containsOnly String]
+    
+    import Tuple.++
+    summon[(tuple1.type ++ tuple2.type) containsOnly String]
+  }
+
+  test("Tuple.Tail preserves containsOnly") {
+    val tuple = ("one", "two", "three")
+
+    summon[Tuple.Tail[tuple.type] containsOnly String]
+  }
+
+  test("Tuple.Reverse preserves containsOnly") {
+    val tuple = ("one", "two", "three")
+
+    summon[Tuple.Reverse[tuple.type] containsOnly String]
+  }
