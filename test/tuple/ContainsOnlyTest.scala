@@ -333,7 +333,7 @@ class ContainsOnlyTest extends munit.FunSuite:
     val tuple2 = ("four", "five")
 
     summon[Tuple.Concat[tuple1.type, tuple2.type] containsOnly String]
-    
+
     import Tuple.++
     summon[(tuple1.type ++ tuple2.type) containsOnly String]
   }
