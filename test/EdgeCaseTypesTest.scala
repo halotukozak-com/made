@@ -181,7 +181,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     val m = Made.derived[WithInherited]
     val x *: EmptyTuple = m.elems
     assert(x.hasAnnotation[JsonName])
-    assertEquals(x.getAnnotation[JsonName].map(_.value), Some("inherited"))
+    assertEquals(x.getAnnotation[JsonName].value, "inherited")
   }
 
   // --- Negative-compile assertions -----------------------------------------

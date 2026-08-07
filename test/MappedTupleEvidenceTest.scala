@@ -38,13 +38,13 @@ class MappedTupleEvidenceTest extends munit.FunSuite:
     assertEquals(fields.optionalFlags[User].toList, List(false, false, true))
   }
 
-  test("getAnnotations(...).toArrayOf[Option[A]] resolves without containsOnly.refl") {
-    // declared `Tuple.Map[es.type, [_] =>> Option[A]]` -> `constMap` proves `containsOnly Option[A]`
+  test("getAnnotations(...).toArrayOf[A | Null] resolves without containsOnly.refl") {
+    // declared `Tuple.Map[es.type, [_] =>> A | Null]` -> `constMap` proves `containsOnly A | Null`
     val got = fields.optionalAnnotations[User]
     assertEquals(got.length, 3)
-    assert(got(0).isEmpty, "name is not @optionalParam")
-    assert(got(1).isEmpty, "age is not @optionalParam")
-    assert(got(2).exists(_.isInstanceOf[optionalParam]), "address is @optionalParam")
+    assert(got(0) == null, "name is not @optionalParam")
+    assert(got(1) == null, "age is not @optionalParam")
+    assert(got(2).isInstanceOf[optionalParam], "address is @optionalParam")
   }
 
   test("mapAs(...).toArrayOf resolves without containsOnly.refl") {
@@ -116,9 +116,9 @@ object MappedTupleEvidenceTest:
       case m: Made.ProductOf[T & scala.Product] =>
         m.elems.hasAnnotations[optionalParam].toArrayOf[Boolean]
 
-    inline def optionalAnnotations[T](using m: Made.Of[T]): Array[Option[optionalParam]] = inline m match
+    inline def optionalAnnotations[T](using m: Made.Of[T]): Array[optionalParam | Null] = inline m match
       case m: Made.ProductOf[T & scala.Product] =>
-        m.elems.getAnnotations[optionalParam].toArrayOf[Option[optionalParam]]
+        m.elems.getAnnotations[optionalParam].toArrayOf[optionalParam | Null]
 
     inline def hasDefault[T](using m: Made.Of[T]): Array[Boolean] = inline m match
       case m: Made.ProductOf[T & scala.Product] =>

@@ -28,15 +28,31 @@ case class User(@JsonName("user_name") name: String)
 val mirror = Made.derived[User]
 
 mirror.hasAnnotation[JsonName]                     // true
-mirror.getAnnotation[JsonName].map(_.value)        // Some("user")
+mirror.getAnnotation[JsonName].value               // "user"
 
 val name *: EmptyTuple = mirror.elems
 name.hasAnnotation[JsonName]                       // true
-name.getAnnotation[JsonName].map(_.value)          // Some("user_name")
+name.getAnnotation[JsonName].value                 // "user_name"
 ```
 
 `hasAnnotation` and `getAnnotation` are `transparent inline` macros — they resolve against the type-level `Metadata`
-tuple, so the result type is precise and the call has no reflective cost at runtime.
+tuple, so the result type is precise and the call has no reflective cost at runtime. `getAnnotation[A]` returns
+`A | Null`: when the macro can already tell the annotation is present (as above, since `User` and its `name` field
+are annotated literally), the result narrows all the way to `A` and `.value` is available directly, with no
+`.get`/`.map` unwrapping.
+
+When presence isn't known until the call site sees a concrete field — e.g. inside code that's generic over which
+element it's looking at — the result narrows to `A | Null` instead, and a plain `!= null` check flow-types it back
+to `A`:
+
+```scala
+val annot: JsonName | Null = name.getAnnotation[JsonName]
+if annot != null then annot.value else "unnamed"      // "user_name" — no Option, no .get
+```
+
+This mirrors `made.Default`'s existing `A | Null` convention for "optional" values rather than introducing a second
+shape alongside `Option`. `getAllAnnotations[A]`, which collects every annotation of type `A` on an element, stays
+`List[A]`, since a list already has a natural empty case.
 
 ## Defining Custom Annotations
 
@@ -137,7 +153,7 @@ case class Carried(@withMeta x: Int)
 val m = Made.derived[Carried]
 val x *: EmptyTuple = m.elems
 x.hasAnnotation[InnerMeta]                         // true
-x.getAnnotation[InnerMeta].isDefined               // true
+x.getAnnotation[InnerMeta] != null                 // true
 ```
 
 ### Constraints

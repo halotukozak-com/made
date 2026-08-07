@@ -587,7 +587,7 @@ class DoneTest extends munit.FunSuite:
     val argElem *: EmptyTuple = fOp.inputElems
 
     assert(argElem.hasAnnotation[ParamMarker])
-    assert(argElem.getAnnotation[ParamMarker].isDefined)
+    assert(argElem.getAnnotation[ParamMarker] != null)
   }
 
 // --- Fixtures ---
