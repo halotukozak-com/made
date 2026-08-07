@@ -431,13 +431,11 @@ object Done:
     "  • parameterless op  → () => OutType\n" +
     "  • parametric op     → (p1: T1, p2: T2, ...) => OutType  (named-tuple argument)",
 )
-sealed trait ValidHandlers[Ops <: Tuple, Handlers <: Tuple]
+opaque type ValidHandlers[Ops <: Tuple, Handlers <: Tuple] = true
 object ValidHandlers:
-  private val reusable = new ValidHandlers[EmptyTuple, EmptyTuple] {}
-
-  def refl[Ops <: Tuple, Handlers <: Tuple]: ValidHandlers[Ops, Handlers] =
-    reusable.asInstanceOf[ValidHandlers[Ops, Handlers]]
-  given [Ops <: Tuple, H <: Tuple](using H <:< Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
+  inline def refl[Ops <: Tuple, Handlers <: Tuple]: ValidHandlers[Ops, Handlers] =
+    true.asInstanceOf[ValidHandlers[Ops, Handlers]]
+  inline given [Ops <: Tuple, H <: Tuple](using inline ev: H <:< Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
 
 extension [Handlers <: Tuple](handlers: Handlers)
   /**

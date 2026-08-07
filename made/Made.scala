@@ -65,8 +65,8 @@ sealed trait Made:
 
   /** Tuple of [[GeneratedMadeElem]] for members annotated with `@generated`. */
   type GeneratedElems <: Tuple
-  def elems: Elems
-  def generatedElems: GeneratedElems
+  val elems: Elems
+  val generatedElems: GeneratedElems
 
   /**
    * Path-dependent evidence: the mirror's [[Elems]] tuple is guaranteed by the deriver to be
@@ -136,7 +136,7 @@ sealed trait MadeElem:
   type Metadata <: Tuple
 
   /** Path-dependent evidence that this element's [[Metadata]] is a tuple of `Meta` entries. */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
 
 /**
  * Element representing a constructor parameter in a product type mirror.
@@ -252,7 +252,7 @@ object MadeElem:
     case MetaOf[meta] => meta
 
   /** `ExtractLabel <: String`, so any `Tuple.Map[Es, ExtractLabel]` is all `String`s (e.g. generated-elem labels). */
-  given [Es <: Tuple] => (Tuple.Map[Es, ExtractLabel] containsOnly String) = containsOnly.refl
+  inline given [Es <: Tuple] => (Tuple.Map[Es, ExtractLabel] containsOnly String) = containsOnly.refl
 
 object Made:
   type Of[T] = Made { type Type = T }
@@ -417,7 +417,7 @@ object Made:
                   type Metadata = meta
                   type GeneratedElems = generatedElems
 
-                  def generatedElems: GeneratedElems = $generatedElemsExpr
+                  val generatedElems: GeneratedElems = $generatedElemsExpr
                   def value: s = singleValueOf[s]
                 .asInstanceOf[
                   Made.SingletonOf[T] {
@@ -435,7 +435,7 @@ object Made:
                   type Metadata = meta
                   type GeneratedElems = generatedElems
 
-                  def generatedElems: GeneratedElems = $generatedElemsExpr
+                  val generatedElems: GeneratedElems = $generatedElemsExpr
                   def value: Unit = ()
                 .asInstanceOf[
                   Made.SingletonOf[T] {
@@ -468,7 +468,7 @@ object Made:
                   type Metadata = meta
 
                   type Elems = madeFieldElem *: EmptyTuple
-                  def elems: Elems = $madeFieldExpr *: EmptyTuple
+                  val elems: Elems = $madeFieldExpr *: EmptyTuple
 
                   def unwrap(value: Type): ElemType = tw.unwrap(value)
                   def wrap(value: ElemType): Type = tw.wrap(value)
@@ -495,10 +495,10 @@ object Made:
                   type Metadata = meta
 
                   type Elems = madeFieldElem *: EmptyTuple
-                  def elems: Elems = $madeFieldExpr *: EmptyTuple
+                  val elems: Elems = $madeFieldExpr *: EmptyTuple
 
                   type GeneratedElems = generatedElems
-                  def generatedElems: GeneratedElems = $generatedElemsExpr
+                  val generatedElems: GeneratedElems = $generatedElemsExpr
 
                   def fromUnsafeArray(product: Array[Any]): T =
                     ${ newTFrom(List('{ product(0).asInstanceOf[fieldType] })) }
@@ -626,12 +626,12 @@ object Made:
                     type Metadata = meta
                     type Elems = mirroredElems
 
-                    def elems: Elems = $mirroredElemsExpr
+                    val elems: Elems = $mirroredElemsExpr
                     def fromUnsafeArray(product: Array[Any]): T = $m.fromProduct(Tuple.fromArray(product))
                     def fromTuple(elems: ElemTypes): T = $m.fromProduct(elems)
 
                     type GeneratedElems = generatedElems
-                    def generatedElems: GeneratedElems = $generatedElemsExpr
+                    val generatedElems: GeneratedElems = $generatedElemsExpr
                   : Made.ProductOf[T] {
                     type Label = label
                     type Metadata = meta
@@ -688,11 +688,11 @@ object Made:
                     type Label = label
                     type Metadata = meta
                     type Elems = mirroredElems
-                    def elems: Elems = $mirroredElemsExpr
+                    val elems: Elems = $mirroredElemsExpr
                     def ordinal(value: T): Int = $m.ordinal(value)
 
                     type GeneratedElems = generatedElems
-                    def generatedElems: GeneratedElems = $generatedElemsExpr
+                    val generatedElems: GeneratedElems = $generatedElemsExpr
                   : Made.SumOf[T] {
                     type Label = label
                     type Metadata = meta
@@ -776,7 +776,7 @@ object Made:
 
     /** Returns the singleton instance. */
     def value: Type
-    final def elems: Elems = EmptyTuple
+    final val elems: Elems = EmptyTuple
 
   /**
    * Mirror for transparent wrapper types (single-field case classes
@@ -805,10 +805,10 @@ object Made:
     /** Wraps a value into the transparent type. */
     def wrap(value: ElemType): Type
 
-    final def generatedElems: GeneratedElems = EmptyTuple
+    final val generatedElems: GeneratedElems = EmptyTuple
 
     /** A transparent type's single [[Elems]] entry is a [[MadeFieldElem]]; refines `containsOnly MadeElem`. */
-    given Elems containsOnly MadeFieldElem = containsOnly.refl
+    inline given Elems containsOnly MadeFieldElem = containsOnly.refl
 
   // workaround for https://github.com/scala/scala3/issues/25245
   private sealed trait TransparentWorkaround[T, U] extends Made.Transparent:

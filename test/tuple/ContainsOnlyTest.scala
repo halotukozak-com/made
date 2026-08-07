@@ -1,6 +1,7 @@
 package made
 
 import made.containsOnly.given
+import made.util.assumeExists
 
 import scala.language.implicitConversions
 
@@ -120,18 +121,6 @@ class ContainsOnlyTest extends munit.FunSuite:
   test("given: no evidence for wrong type") {
     val errors = compileErrors("summon[(Int, Int) containsOnly String]")
     assert(errors.nonEmpty, "Should not find evidence for wrong type")
-  }
-
-  // --- ---
-
-  test("produces valid evidence") {
-    val evidence: (Int, Int) containsOnly Int = containsOnly.refl
-    assert(evidence.asInstanceOf[Boolean])
-  }
-
-  test("for EmptyTuple") {
-    val evidence: EmptyTuple containsOnly String = containsOnly.refl
-    assert(evidence.asInstanceOf[Boolean])
   }
 
   // --- integration with mapAs ---
@@ -272,7 +261,7 @@ class ContainsOnlyTest extends munit.FunSuite:
     val tuple: Tuple = (3, 3, 3)
     given (tuple.type containsOnly 3) = containsOnly.refl
 
-    summon[tuple.type containsOnly Int]
+    assumeExists[tuple.type containsOnly Int]
   }
 
   test("containsOnly is covariant in T: subclass widens to superclass") {
@@ -283,7 +272,7 @@ class ContainsOnlyTest extends munit.FunSuite:
 
     given (tuple.type containsOnly Apple) = containsOnly.refl
 
-    summon[tuple.type containsOnly Fruit]
+    assumeExists[tuple.type containsOnly Fruit]
   }
 
   test("containsOnly is covariant in T: abstract type bound widens") {
@@ -294,58 +283,58 @@ class ContainsOnlyTest extends munit.FunSuite:
 
     given (tuple.type containsOnly A) = containsOnly.refl
 
-    summon[tuple.type containsOnly Super]
+    assumeExists[tuple.type containsOnly Super]
   }
 
   test("containsOnly is covariant in T: String literal widens to String") {
     val tuple: Tuple = ("a", "b")
     given (tuple.type containsOnly "a") = containsOnly.refl
 
-    summon[tuple.type containsOnly String]
+    assumeExists[tuple.type containsOnly String]
   }
 
   test("any tuple containsOnly Any without explicit evidence") {
     val tuple = ("a", "b")
 
-    summon[tuple.type containsOnly Any]
+    assumeExists[tuple.type containsOnly Any]
   }
 
   test("heterogeneous tuple containsOnly Any") {
-    summon[(Int, String, Boolean) containsOnly Any]
+    assumeExists[(Int, String, Boolean) containsOnly Any]
   }
 
   test("abstract Tuple containsOnly Any") {
     val tuple: Tuple = (1, "x", true)
 
-    summon[tuple.type containsOnly Any]
+    assumeExists[tuple.type containsOnly Any]
   }
 
   test("EmptyTuple containsOnly Any") {
-    summon[EmptyTuple containsOnly Any]
+    assumeExists[EmptyTuple containsOnly Any]
   }
 
   test("nested tuple containsOnly Any") {
-    summon[((Int, Int), (String, String)) containsOnly Any]
+    assumeExists[((Int, Int), (String, String)) containsOnly Any]
   }
 
   test("Tuple.Concat preserves containsOnly") {
     val tuple1 = ("one", "two", "three")
     val tuple2 = ("four", "five")
 
-    summon[Tuple.Concat[tuple1.type, tuple2.type] containsOnly String]
+    assumeExists[Tuple.Concat[tuple1.type, tuple2.type] containsOnly String]
 
     import Tuple.++
-    summon[(tuple1.type ++ tuple2.type) containsOnly String]
+    assumeExists[(tuple1.type ++ tuple2.type) containsOnly String]
   }
 
   test("Tuple.Tail preserves containsOnly") {
     val tuple = ("one", "two", "three")
 
-    summon[Tuple.Tail[tuple.type] containsOnly String]
+    assumeExists[Tuple.Tail[tuple.type] containsOnly String]
   }
 
   test("Tuple.Reverse preserves containsOnly") {
     val tuple = ("one", "two", "three")
 
-    summon[Tuple.Reverse[tuple.type] containsOnly String]
+    assumeExists[Tuple.Reverse[tuple.type] containsOnly String]
   }

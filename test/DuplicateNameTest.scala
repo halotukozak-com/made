@@ -1,7 +1,7 @@
 package made
 
 import made.annotation.*
-import scala.compiletime.testing.typeCheckErrors
+import scala.compiletime.testing.{typeCheckErrors, Error}
 
 class DuplicateNameTest extends munit.FunSuite:
 
@@ -26,12 +26,12 @@ class DuplicateNameTest extends munit.FunSuite:
   }
 
   test("product with distinct @name annotations should compile") {
-    val errors = typeCheckErrors("Made.derived[DistinctNameProduct]")
+    val errors: List[Error] = typeCheckErrors("Made.derived[DistinctNameProduct]")
     assert(errors.isEmpty, s"Expected no errors but got: $errors")
   }
 
   test("sum with distinct @name annotations should compile") {
-    val errors = typeCheckErrors("Made.derived[DistinctNameSum]")
+    val errors: List[Error] = typeCheckErrors("Made.derived[DistinctNameSum]")
     assert(errors.isEmpty, s"Expected no errors but got: $errors")
   }
 

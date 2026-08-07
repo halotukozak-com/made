@@ -10,7 +10,7 @@
 //> using options -Ycheck:all
 //> using options -Yexplain-lowlevel -Yexplicit-nulls
 //> using options -Yshow-suppressed-errors -Yshow-var-bounds
-//> using options -Wsafe-init -Werror -Wunused:all
+//> using options -Wsafe-init -Werror -Wunused:all -explain-cyclic
 ////> using options -Yprofile-enabled" -Yprofile-trace:debug/compile-trace.json"
 
 //> using publish.organization io.github.halotukozak

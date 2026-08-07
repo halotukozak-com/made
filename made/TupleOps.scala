@@ -1,5 +1,6 @@
 package made
 
+import scala.annotation.unused
 import scala.compiletime.ops.boolean.||
 import scala.compiletime.ops.int.S
 import scala.reflect.ClassTag
@@ -11,11 +12,11 @@ extension (tup: Tuple)
 
   inline def hasDuplicates: HasDuplicates[tup.type] = compiletime.constValue[HasDuplicates[tup.type]]
 
-  inline def mapAs[T](using tup.type containsOnly T)[F[_ <: T]](inline f: [t <: T] => t => F[t])
+  inline def mapAs[T](using @unused ev: tup.type containsOnly T)[F[_ <: T]](inline f: [t <: T] => t => F[t])
     : Tuple.Map[tup.type, [X] =>> F[X & T]] =
     tup.map[[X] =>> F[X & T]]([t] => (t: t) => f(t.asInstanceOf[t & T]))
 
-  def toArrayOf[T](using tup.type containsOnly T)(using ClassTag[T]): Array[T] = tup match
+  def toArrayOf[T](using @unused ev: tup.type containsOnly T)(using ClassTag[T]): Array[T] = tup match
     case EmptyTuple => Array.empty[T]
     case self: Product =>
       val arr = new Array[T](self.productArity)
