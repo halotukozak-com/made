@@ -21,6 +21,13 @@ object containsOnly extends containsOnlyLowPriority:
   /** A covariant `F` gives `F[e] <: F[Any]` for every element (invariant `F` still needs `refl`). */
   given [Es <: Tuple, F[+_]] => (Tuple.Map[Es, F] containsOnly F[Any]) = refl
 
+  given [Tup <: Tuple, T] => (@unused ev: Tup containsOnly T) => (Tuple.Tail[Tup] containsOnly T) = refl
+  given [Tup <: Tuple, T] => (@unused ev: Tup containsOnly T) => (Tuple.Reverse[Tup] containsOnly T) = refl
+  given [Tup1 <: Tuple, Tup2 <: Tuple, T] => (@unused ev1: Tup1 containsOnly T, @unused ev2: Tup2 containsOnly T)
+    => (Tuple.Concat[Tup1, Tup2] containsOnly T) = refl
+  given [Tup1 <: Tuple, Tup2 <: Tuple, T1, T2] => (@unused ev1: Tup1 containsOnly T1, @unused ev2: Tup2 containsOnly T2)
+    => (Tuple.Zip[Tup1, Tup2] containsOnly (T1, T2)) = refl
+
   import scala.language.implicitConversions
 
   given [Tup <: Tuple, T] => (@unused ev: Tup containsOnly T) => Conversion[Tuple.Head[Tup], T] = _.asInstanceOf[T]
