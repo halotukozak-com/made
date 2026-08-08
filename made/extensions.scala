@@ -1,9 +1,9 @@
 package made
 
-import scala.annotation.{publicInBinary, Annotation}
+import scala.annotation.{publicInBinary, unused, Annotation}
 import scala.quoted.*
 
-extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
+extension [M <: Tuple](self: { type Metadata = M })(using @unused ev: M containsOnly Meta)
   /**
    * Returns `true` if the mirror's `Metadata` tuple contains an annotation of type `A`.
    *
@@ -13,14 +13,19 @@ extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
   transparent inline def hasAnnotation[A <: Annotation]: Boolean = ${ hasAnnotationImpl[A, M] }
 
   /**
-   * Returns `Some(annotation)` if the mirror's `Metadata` tuple contains an annotation
-   * of type `A`, `None` otherwise.
+   * Returns the annotation instance of type `A` if the mirror's `Metadata` tuple contains one,
+   * `null` otherwise.
    *
-   * The returned annotation instance provides access to annotation parameters
-   * (e.g., `getAnnotation[JsonName].get.value`). Transparent inline - resolved at compile time.
+   * The returned annotation instance provides access to annotation parameters directly
+   * (e.g., `getAnnotation[JsonName].value`) once narrowed away from `null` — either by a
+   * `hasAnnotation[A]` guard or a plain `!= null` check, both of which the compiler can verify
+   * statically. Transparent inline - resolved at compile time, so the result narrows to the
+   * annotation's own type or to `Null`, never a widened `A | Null`.
    * `A` must extend [[made.annotation.MetaAnnotation]].
    */
-  transparent inline def getAnnotation[A <: Annotation]: Option[A] = ${ getAnnotationImpl[A, M] }
+  transparent inline def getAnnotation[A <: Annotation]: A | Null = ${ getAnnotationImpl[A, M] }
+
+  transparent inline def getAllAnnotations[A <: Annotation]: List[A] = ${ getAllAnnotationsImpl[A, M] }
 
 extension [L <: String](l: { type Label = L })
   /**
@@ -34,7 +39,7 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
+extension (es: Tuple)(using @unused ev: es.type containsOnly { type Metadata <: Tuple })
   /**
    * Per-element [[hasAnnotation]] over a tuple whose entries each declare a `Metadata` type member
    * (e.g. a tuple of [[MadeElem]]s, [[GeneratedMadeElem]]s, or a singleton `Made` instance's
@@ -46,22 +51,34 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
   /**
    * Per-element [[getAnnotation]] over a tuple whose entries each declare a `Metadata` type member.
    */
-  transparent inline def getAnnotations[A <: Annotation]: Tuple.Map[es.type, [_] =>> Option[A]] =
+  transparent inline def getAnnotations[A <: Annotation]: Tuple.Map[es.type, [_] =>> A | Null] =
     ${ getAnnotationsImpl[es.type, A] }
 
 // $COVERAGE-OFF$
-@publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
-  : Expr[Option[A]] =
+private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes): Option[Expr[A]] =
   import quotes.reflect.*
 
-  Expr.ofOption:
+  traverseTuple(Type.of[M]).iterator
+    .map(TypeRepr.of(using _))
+    .collectFirst:
+      case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => annot.asExprOf[A]
+
+@publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using Quotes): Expr[A | Null] =
+  findAnnotationExpr[A, M].getOrElse('{ null })
+
+@publicInBinary private def getAllAnnotationsImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
+  : Expr[List[A]] =
+  import quotes.reflect.*
+
+  Expr.ofList:
     traverseTuple(Type.of[M]).iterator
       .map(TypeRepr.of(using _))
-      .collectFirst:
+      .collect:
         case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => annot.asExprOf[A]
+      .toList
 
 @publicInBinary private def hasAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using Quotes): Expr[Boolean] =
-  Expr(getAnnotationImpl[A, M].isExprOf[Some[A]])
+  Expr(findAnnotationExpr[A, M].isDefined)
 
 @publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
   : Expr[Tuple.Map[Es, [_] =>> Boolean]] = Expr
@@ -71,10 +88,19 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
   .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> Boolean]]]
 
 @publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
-  : Expr[Tuple.Map[Es, [_] =>> Option[A]]] = Expr
+  : Expr[Tuple.Map[Es, [_] =>> A | Null]] = Expr
   .ofRefinedTuple:
     traverseTuple(Type.of[Es]).map:
       case '[type m <: Tuple; { type Metadata = m }] => getAnnotationImpl[A, m]
-  .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> Option[A]]]]
+  .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> A | Null]]]
+
+@publicInBinary private def getAllAnnotationsImpl[M <: Tuple: Type](using Quotes): Expr[Tuple /* of Annotation*/ ] =
+  import quotes.reflect.*
+  Expr.ofRefinedTuple:
+    traverseTuple(Type.of[M]).iterator
+      .map(TypeRepr.of(using _))
+      .collect:
+        case AnnotatedType(_, annot) => annot.asExprOf[Annotation] // maybe more precise
+      .toList
 
 // $COVERAGE-ON$

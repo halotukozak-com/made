@@ -23,7 +23,7 @@ class BugHuntInheritanceTest extends munit.FunSuite:
     val m = Made.derived[ChildWithJson]
     val x *: EmptyTuple = m.elems
     assert(x.hasAnnotation[JsonName])
-    assertEquals(x.getAnnotation[JsonName].map(_.value), Some("inherited"))
+    assertEquals(x.getAnnotation[JsonName].value, "inherited")
   }
 
   test("nested aggregate — outer aggregate yields inner aggregate's inner annotations") {
@@ -47,8 +47,8 @@ class BugHuntInheritanceTest extends munit.FunSuite:
   test("child case-class field annotation does not erase parent trait annotation") {
     val m = Made.derived[ChildOverridesAnnotation]
     val x *: EmptyTuple = m.elems
-    val js = x.getAnnotation[JsonName].map(_.value)
-    assert(js.contains("child") || js.contains("parent"), s"expected child or parent JsonName, got $js")
+    val js = x.getAnnotation[JsonName].value
+    assert(js == "child" || js == "parent", s"expected child or parent JsonName, got $js")
   }
 
   test("aggregate annotation on enum case sets the case label") {
