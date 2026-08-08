@@ -46,6 +46,15 @@ element it's looking at — the result narrows to `A | Null` instead, and a plai
 to `A`:
 
 ```scala
+import made.*
+import made.annotation.*
+
+class JsonName(val value: String) extends MetaAnnotation
+
+case class User(@JsonName("user_name") name: String)
+
+val name *: EmptyTuple = Made.derived[User].elems
+
 val annot: JsonName | Null = name.getAnnotation[JsonName]
 if annot != null then annot.value else "unnamed"      // "user_name" — no Option, no .get
 ```
