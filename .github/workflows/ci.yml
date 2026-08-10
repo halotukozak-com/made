@@ -36,7 +36,7 @@ jobs:
         run: scala-cli .scoverage/report.sc
       - uses: codecov/codecov-action@v7
         with:
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           files: .scoverage/report/cobertura.xml
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Test documentation
