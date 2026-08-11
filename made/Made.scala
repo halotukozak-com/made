@@ -546,8 +546,8 @@ object Made:
                   case _ => false
               case _ => false
 
-            val elemTypesList = traverseTuple(Type.of[mirroredElemTypes])
-            val elemLabelsList = traverseTuple(Type.of[mirroredElemLabels])
+            val elemTypesList = traverseTupleType(Type.of[mirroredElemTypes])
+            val elemLabelsList = traverseTupleType(Type.of[mirroredElemLabels])
 
             val (exprs, names) = if tSymbol.caseFields.sizeIs == elemTypesList.size then
               elemTypesList
@@ -650,7 +650,7 @@ object Made:
                 }
               } =>
 
-            val (exprs, names) = traverseTuple(Type.of[mirroredElemTypes])
+            val (exprs, names) = traverseTupleType(Type.of[mirroredElemTypes])
               .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                 case ((exprs, names), '[subType]) =>
                   val subType = TypeRepr.of[subType]

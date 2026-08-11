@@ -58,7 +58,7 @@ extension (es: Tuple)(using @unused ev: es.type containsOnly { type Metadata <: 
 private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes): Option[Expr[A]] =
   import quotes.reflect.*
 
-  traverseTuple(Type.of[M]).iterator
+  traverseTupleType(Type.of[M]).iterator
     .map(TypeRepr.of(using _))
     .collectFirst:
       case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => annot.asExprOf[A]
@@ -71,7 +71,7 @@ private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using qu
   import quotes.reflect.*
 
   Expr.ofList:
-    traverseTuple(Type.of[M]).iterator
+    traverseTupleType(Type.of[M]).iterator
       .map(TypeRepr.of(using _))
       .collect:
         case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => annot.asExprOf[A]
@@ -83,21 +83,21 @@ private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using qu
 @publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
   : Expr[Tuple.Map[Es, [_] =>> Boolean]] = Expr
   .ofRefinedTuple:
-    traverseTuple(Type.of[Es]).map:
+    traverseTupleType(Type.of[Es]).map:
       case '[type m <: Tuple; { type Metadata = m }] => hasAnnotationImpl[A, m]
   .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> Boolean]]]
 
 @publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
   : Expr[Tuple.Map[Es, [_] =>> A | Null]] = Expr
   .ofRefinedTuple:
-    traverseTuple(Type.of[Es]).map:
+    traverseTupleType(Type.of[Es]).map:
       case '[type m <: Tuple; { type Metadata = m }] => getAnnotationImpl[A, m]
   .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> A | Null]]]
 
 @publicInBinary private def getAllAnnotationsImpl[M <: Tuple: Type](using Quotes): Expr[Tuple /* of Annotation*/ ] =
   import quotes.reflect.*
   Expr.ofRefinedTuple:
-    traverseTuple(Type.of[M]).iterator
+    traverseTupleType(Type.of[M]).iterator
       .map(TypeRepr.of(using _))
       .collect:
         case AnnotatedType(_, annot) => annot.asExprOf[Annotation] // maybe more precise

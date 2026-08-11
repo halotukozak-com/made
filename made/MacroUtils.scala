@@ -41,9 +41,9 @@ private[made] def traverseTypes(tpes: Iterable[Type[? <: AnyKind]])(using Quotes
     case ('[tpe], '[type acc <: Tuple; acc]) => Type.of[tpe *: acc]
     case (_, _) => wontHappen
 
-private[made] def traverseTuple(tpe: Type[? <: Tuple])(using Quotes): List[Type[? <: AnyKind]] = tpe match
+private[made] def traverseTupleType(tpe: Type[? <: Tuple])(using Quotes): List[Type[? <: AnyKind]] = tpe match
   case '[EmptyTuple] => Nil
-  case '[t *: ts] => Type.of[t] :: traverseTuple(Type.of[ts])
+  case '[t *: ts] => Type.of[t] :: traverseTupleType(Type.of[ts])
 
 extension (companion: Expr.type)
   private[made] def ofRefinedTuple(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] = exprs.runtimeChecked match
