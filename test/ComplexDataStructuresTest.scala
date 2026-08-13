@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 
 class ComplexDataStructuresTest extends munit.FunSuite:
 

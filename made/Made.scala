@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.deriving.Mirror
@@ -17,7 +17,7 @@ import commons.*
  *
  * @example
  * {{{
- * import made.*
+ * import halotukozak.made.*
  *
  * case class User(name: String, age: Int)
  *
@@ -106,7 +106,7 @@ sealed trait Made:
  *
  * @example
  * {{{
- * import made.*
+ * import halotukozak.made.*
  *
  * case class User(name: String, age: Int)
  *
@@ -223,7 +223,7 @@ object MadeSubSingletonElem:
  *
  * @see [[MadeFieldElem]]
  * @see [[MadeElem]]
- * @see [[made.annotation.generated]]
+ * @see [[halotukozak.made.annotation.generated]]
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
   /** Always `None`; generated members have no constructor defaults. */

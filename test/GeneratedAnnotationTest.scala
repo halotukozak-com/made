@@ -1,8 +1,8 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
-import made.util.SnippetCompiler
-import made.util.SnippetCompiler.containsMessage
+import halotukozak.made.annotation.*
+import halotukozak.made.util.SnippetCompiler
+import halotukozak.made.util.SnippetCompiler.containsMessage
 
 class GeneratedAnnotationTest extends munit.FunSuite:
   import GeneratedAnnotationTest.*
@@ -167,8 +167,8 @@ class GeneratedAnnotationTest extends munit.FunSuite:
   test("@generated def with parameters is rejected") {
     val diags = SnippetCompiler.compile(
       // language=scala 3
-      """import made.*
-        |import made.annotation.generated
+      """import halotukozak.made.*
+        |import halotukozak.made.annotation.generated
         |case class WithParam(x: Int):
         |  @generated def shifted(by: Int): Int = x + by
         |object S { val _ = Made.derived[WithParam] }

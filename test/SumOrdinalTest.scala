@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 class SumOrdinalTest extends munit.FunSuite:
   import SumOrdinalTest.*

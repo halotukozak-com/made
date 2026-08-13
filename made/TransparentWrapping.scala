@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 import scala.quoted.*
 
@@ -11,7 +11,7 @@ import scala.quoted.*
  * @tparam R the wrapped field type
  * @tparam T the transparent wrapper type
  * @see [[Made.Transparent]]
- * @see [[made.annotation.transparent]]
+ * @see [[halotukozak.made.annotation.transparent]]
  */
 trait TransparentWrapping[R, T]:
   /** Wraps a value of the field type into the transparent wrapper type. */

@@ -1,15 +1,15 @@
-package made
+package halotukozak.made
 
 import dotty.tools.dotc.reporting.Diagnostic
-import made.util.SnippetCompiler
-import made.util.SnippetCompiler.containsMessage
+import halotukozak.made.util.SnippetCompiler
+import halotukozak.made.util.SnippetCompiler.containsMessage
 
 class FBoundedNothingTest extends munit.FunSuite:
 
   private def deriveSnippet(definitions: String, derivation: String): List[Diagnostic] =
     SnippetCompiler.compile:
       // language=scala 3
-      s"""import made.*
+      s"""import halotukozak.made.*
          |$definitions
          |object FbSnippet { val _ = $derivation }
          |""".stripMargin

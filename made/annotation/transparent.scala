@@ -1,4 +1,4 @@
-package made.annotation
+package halotukozak.made.annotation
 
 /**
  * Marks a case class for `Made.Transparent` derivation instead of `Made.Product`.
@@ -8,8 +8,8 @@ package made.annotation
  * compile error. The resulting mirror provides `wrap`/`unwrap` methods
  * for the single field.
  *
- * @see [[made.Made.Transparent]]
- * @see [[made.TransparentWrapping]]
+ * @see [[halotukozak.made.Made.Transparent]]
+ * @see [[halotukozak.made.TransparentWrapping]]
  * @see [[MetaAnnotation]]
  */
 class transparent extends MetaAnnotation

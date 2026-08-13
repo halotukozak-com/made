@@ -1,4 +1,4 @@
-package made.annotation
+package halotukozak.made.annotation
 
 import scala.annotation.RefiningAnnotation
 
@@ -10,8 +10,8 @@ import scala.annotation.RefiningAnnotation
  * `Made.Label`) and fields (overrides `MadeElem.Label`).
  *
  * @param name the label override
- * @see [[made.Made]]
- * @see [[made.MadeElem]]
+ * @see [[halotukozak.made.Made]]
+ * @see [[halotukozak.made.MadeElem]]
  * @see [[MetaAnnotation]]
  */
 class name(val name: String) extends RefiningAnnotation

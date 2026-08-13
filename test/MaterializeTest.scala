@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 trait Calc:
   def add(a: Int, b: Int): Int

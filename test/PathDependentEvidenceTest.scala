@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 import commons.containsOnly
 
 class PathDependentEvidenceTest extends munit.FunSuite:
@@ -110,7 +110,7 @@ class PathDependentEvidenceTest extends munit.FunSuite:
   test("hasAnnotations does not compile on tuple element lacking Metadata member") {
     val errors = scala.compiletime.testing.typeCheckErrors("""
       val tup: (String, Int) = ("x", 1)
-      tup.hasAnnotations[made.PathDependentEvidenceTest.PMarker]
+      tup.hasAnnotations[halotukozak.made.PathDependentEvidenceTest.PMarker]
     """)
     assert(errors.nonEmpty, "Expected compile error: no Metadata member on String/Int")
   }

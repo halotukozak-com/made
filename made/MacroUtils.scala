@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.{name, repeated, AnnotationAggregate, MetaAnnotation}
+import halotukozak.made.annotation.{name, repeated, AnnotationAggregate, MetaAnnotation}
 
 import scala.annotation.{tailrec, Annotation, StaticAnnotation}
 import scala.collection.immutable.List

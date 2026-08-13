@@ -1,4 +1,4 @@
-package made.annotation
+package halotukozak.made.annotation
 
 /**
  * Marker injected by `Made.derived` on fields declared with varargs (`T*`).

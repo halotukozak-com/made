@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 import scala.annotation.{publicInBinary, Annotation}
 import scala.quoted.*
@@ -9,7 +9,7 @@ extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
    * Returns `true` if the mirror's `Metadata` tuple contains an annotation of type `A`.
    *
    * Transparent inline - resolved entirely at compile time, no runtime cost.
-   * `A` must extend [[made.annotation.MetaAnnotation]].
+   * `A` must extend [[halotukozak.made.annotation.MetaAnnotation]].
    */
   transparent inline def hasAnnotation[A <: Annotation]: Boolean = ${ hasAnnotationImpl[A, M] }
 
@@ -22,7 +22,7 @@ extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
    * `hasAnnotation[A]` guard or a plain `!= null` check, both of which the compiler can verify
    * statically. Transparent inline - resolved at compile time, so the result narrows to the
    * annotation's own type or to `Null`, never a widened `A | Null`.
-   * `A` must extend [[made.annotation.MetaAnnotation]].
+   * `A` must extend [[halotukozak.made.annotation.MetaAnnotation]].
    */
   transparent inline def getAnnotation[A <: Annotation]: A | Null = ${ getAnnotationImpl[A, M] }
 

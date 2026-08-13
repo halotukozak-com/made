@@ -1,4 +1,4 @@
-package made.annotation
+package halotukozak.made.annotation
 
 /**
  * Marks a field to use `Default[T].apply()` as its default value.
@@ -7,7 +7,7 @@ package made.annotation
  * scope. In the default resolution priority chain:
  * `@whenAbsent` > `@optionalParam` > constructor default.
  *
- * @see [[made.Default]]
+ * @see [[halotukozak.made.Default]]
  * @see [[whenAbsent]]
  * @see [[MetaAnnotation]]
  */
