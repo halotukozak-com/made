@@ -1,12 +1,12 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 
 import scala.compiletime.testing.typeCheckErrors
 
 /**
  * Given `class CovAnnot[+Name <: String](val name: Name)`, once `getAnnotation` has narrowed to
- * the precise `CovAnnot["bar"]` (see [[made.GetAnnotationTypeParamTest]]), can `Name` itself be
+ * the precise `CovAnnot["bar"]` (see [[halotukozak.made.GetAnnotationTypeParamTest]]), can `Name` itself be
  * pulled back out as a compile-time-checked singleton type — not just a correct runtime value?
  *
  * Two ways to ask "what's the `Name` of this `CovAnnot[_]`?" behave differently:

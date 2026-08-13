@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 class FromTupleTest extends munit.FunSuite:
   import FromTupleTest.*

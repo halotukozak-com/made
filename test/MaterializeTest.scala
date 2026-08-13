@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 trait Calc:
   def add(a: Int, b: Int): Int
@@ -17,7 +17,7 @@ class MaterializeTest extends munit.FunSuite:
     val err = scala.compiletime.testing.typeCheckErrors(
       """
         val handlers = (() => "calc", () => true)
-        handlers.to[Calc]
+        handlers.materializeTo[Calc]
       """,
     )
     assert(err.nonEmpty)
@@ -26,7 +26,7 @@ class MaterializeTest extends munit.FunSuite:
     val err = scala.compiletime.testing.typeCheckErrors(
       """
         val handlers = ((args: (a: Int, b: Int)) => args.a + args.b, () => "calc", () => true, () => "extra")
-        handlers.to[Calc]
+        handlers.materializeTo[Calc]
       """,
     )
     assert(err.nonEmpty)
@@ -35,7 +35,7 @@ class MaterializeTest extends munit.FunSuite:
     val err = scala.compiletime.testing.typeCheckErrors(
       """
         val handlers = ((args: (a: Int, b: Int)) => "wrong", () => "calc", () => true)
-        handlers.to[Calc]
+        handlers.materializeTo[Calc]
       """,
     )
     assert(err.nonEmpty)
@@ -44,7 +44,7 @@ class MaterializeTest extends munit.FunSuite:
     val err = scala.compiletime.testing.typeCheckErrors(
       """
         val handlers = ((args: (a: String, b: Int)) => 0, () => "calc", () => true)
-        handlers.to[Calc]
+        handlers.materializeTo[Calc]
       """,
     )
     assert(err.nonEmpty)
@@ -53,7 +53,7 @@ class MaterializeTest extends munit.FunSuite:
     val err = scala.compiletime.testing.typeCheckErrors(
       """
         val handlers = (() => 0, () => "calc", () => true)
-        handlers.to[Calc]
+        handlers.materializeTo[Calc]
       """,
     )
     assert(err.nonEmpty)
@@ -64,7 +64,7 @@ class MaterializeTest extends munit.FunSuite:
       () => "calc",
       () => true,
     )
-    val c: Calc = handlers.to[Calc]
+    val c: Calc = handlers.materializeTo[Calc]
     assertEquals(c.add(2, 3), 5)
     assertEquals(c.name, "calc")
     assertEquals(c.ping(), true)
@@ -74,7 +74,7 @@ class MaterializeTest extends munit.FunSuite:
       () => 42,
       () => "hello",
     )
-    val v: Props = handlers.to[Props]
+    val v: Props = handlers.materializeTo[Props]
     assertEquals(v.magic, 42)
     assertEquals(v.message, "hello")
 
@@ -87,14 +87,14 @@ class MaterializeTest extends munit.FunSuite:
       ,
       () => "x",
     )
-    val v: Props = handlers.to[Props]
+    val v: Props = handlers.materializeTo[Props]
     assertEquals(v.magic, 1)
     assertEquals(v.magic, 2)
     assertEquals(v.magic, 3)
 
   test("materialize supports multi-param-list methods"):
     val handler = (args: (left: String, right: Int)) => args.left + args.right.toString
-    val svc: MultiListService = (handler *: EmptyTuple).to[MultiListService]
+    val svc: MultiListService = (handler *: EmptyTuple).materializeTo[MultiListService]
     assertEquals(svc.combine("x")(3), "x3")
 
   test("materialize supports Unit-returning side-effectful methods"):
@@ -103,14 +103,14 @@ class MaterializeTest extends munit.FunSuite:
       (args: (msg: String)) => log.append(args.msg),
       () => log.append("tick"),
     )
-    val u = handlers.to[UnitReturning]
+    val u = handlers.materializeTo[UnitReturning]
     u.log("hello")
     u.tick
     assertEquals(log.toList, List("hello", "tick"))
 
   test("materialize supports generic types"):
     val handler = (args: (raw: String)) => args.raw.toInt
-    val conv: Converter[Int] = (handler *: EmptyTuple).to[Converter[Int]]
+    val conv: Converter[Int] = (handler *: EmptyTuple).materializeTo[Converter[Int]]
     assertEquals(conv.convert("42"), 42)
 
   trait Base:
@@ -124,6 +124,6 @@ class MaterializeTest extends munit.FunSuite:
       () => "from-base",
       () => 99,
     )
-    val v: Extended = handlers.to[Extended]
+    val v: Extended = handlers.materializeTo[Extended]
     assertEquals(v.fromBase, "from-base")
     assertEquals(v.own, 99)

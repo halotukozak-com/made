@@ -1,4 +1,4 @@
-package made.annotation
+package halotukozak.made.annotation
 
 import scala.annotation.{publicInBinary, StaticAnnotation}
 import scala.quoted.*

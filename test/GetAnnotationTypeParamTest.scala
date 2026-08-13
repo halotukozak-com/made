@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 
 import scala.compiletime.testing.typeCheckErrors
 
@@ -10,12 +10,12 @@ import scala.compiletime.testing.typeCheckErrors
  *
  * `class Annot[Name <: String](val name: Name)` is queried via `getAnnotation[Annot[SomeArg]]`,
  * where `SomeArg` participates in the lookup's `annot.tpe <:< TypeRepr.of[A]` subtype check
- * (see [[made.extensions.getAnnotationImpl]]/`findAnnotationExpr`). Two things fall out of that:
+ * (see [[halotukozak.made.extensions.getAnnotationImpl]]/`findAnnotationExpr`). Two things fall out of that:
  *
  *   - When the found annotation's type is a subtype of the requested `A`, `transparent inline`
  *     narrows the result to the annotation's *actual* precise type, not to `A` as written —
  *     exactly like it already does for parameter-less annotations (see
- *     [[made.FieldAnnotationTest]]'s "narrows to the annotation type or Null" tests).
+ *     [[halotukozak.made.FieldAnnotationTest]]'s "narrows to the annotation type or Null" tests).
  *   - Because `Name` is invariant here, that subtype check only succeeds if `A`'s type argument
  *     matches exactly (or the argument is a wildcard). Querying with a *widened* argument acts as
  *     asking for a different, unrelated type: the annotation isn't found and `getAnnotation`

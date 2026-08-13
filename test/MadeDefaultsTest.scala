@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 class MadeDefaultsTest extends munit.FunSuite:
   test("case class with defaults") {
     val m: Made.Product {

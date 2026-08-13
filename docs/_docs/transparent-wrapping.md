@@ -23,7 +23,7 @@ A transparent type is a case class with exactly one constructor field, annotated
 tells Made to produce a `Made.Transparent` mirror instead of `Made.Product`.
 
 ```scala
-import made.annotation.transparent
+import halotukozak.made.annotation.transparent
 
 @transparent
 case class Email(value: String)
@@ -50,8 +50,8 @@ The `GeneratedElems` type is fixed to `EmptyTuple`. `@generated` members are not
 will cause a compile error.
 
 ```scala
-import made.*
-import made.annotation.transparent
+import halotukozak.made.*
+import halotukozak.made.annotation.transparent
 
 @transparent
 case class Email(value: String)

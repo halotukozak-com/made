@@ -17,8 +17,8 @@ metadata is carried by each `MadeElem` under the same `Metadata` type member. Wh
 present, `Metadata =:= EmptyTuple`.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 class JsonName(val value: String) extends MetaAnnotation
 
@@ -46,8 +46,8 @@ element it's looking at — the result narrows to `A | Null` instead, and a plai
 to `A`:
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 class JsonName(val value: String) extends MetaAnnotation
 
@@ -70,7 +70,7 @@ Annotations extending `MetaAnnotation` participate in Made's metadata. `MetaAnno
 into the mirror's `Metadata` tuple.
 
 ```scala
-import made.annotation.MetaAnnotation
+import halotukozak.made.annotation.MetaAnnotation
 
 class JsonName(val value: String) extends MetaAnnotation
 class Optional extends MetaAnnotation
@@ -86,8 +86,8 @@ as `@deprecated` will not appear in `Metadata`.
 `mirror.ElemLabels`, and the runtime `MadeElem#label` accessor.
 
 ```scala
-import made.*
-import made.annotation.name
+import halotukozak.made.*
+import halotukozak.made.annotation.name
 
 @name("user")
 case class User(@name("user_name") name: String, age: Int)
@@ -116,7 +116,7 @@ To define an aggregate, extend `AnnotationAggregate` and implement `aggregated` 
 The implementation must be `final def`, and the aggregated annotations are declared on that method.
 
 ```scala
-import made.annotation.*
+import halotukozak.made.annotation.*
 import scala.annotation.StaticAnnotation
 
 class mongoId extends AnnotationAggregate:
@@ -133,7 +133,7 @@ Constructor parameters of the aggregate can be referenced in inner annotation ar
 application site:
 
 ```scala
-import made.annotation.*
+import halotukozak.made.annotation.*
 import scala.annotation.StaticAnnotation
 
 class customName(n: String) extends AnnotationAggregate:
@@ -147,8 +147,8 @@ Aggregates compose freely with `MetaAnnotation` — query `hasAnnotation` / `get
 annotation type, not the aggregate:
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 import scala.annotation.StaticAnnotation
 
 class InnerMeta extends MetaAnnotation

@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 import scala.deriving.Mirror.Sum
 
 class MadeTest extends munit.FunSuite:

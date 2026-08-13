@@ -1,4 +1,4 @@
-package made.annotation
+package halotukozak.made.annotation
 import scala.annotation.RefiningAnnotation
 
 /**
@@ -13,7 +13,7 @@ import scala.annotation.RefiningAnnotation
  * Custom annotations should extend this class to participate in the
  * Made metadata system.
  *
- * @see [[made.Made]]
+ * @see [[halotukozak.made.Made]]
  * @see [[generated]]
  * @see [[name]]
  * @see [[optionalParam]]

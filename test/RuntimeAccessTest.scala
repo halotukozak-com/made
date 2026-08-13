@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 import scala.compiletime.testing.typeCheckErrors
 
 class RuntimeAccessTest extends munit.FunSuite:

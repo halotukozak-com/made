@@ -1,6 +1,6 @@
-package made.example.show
+package halotukozak.made.example.show
 
-import made.annotation.transparent
+import halotukozak.made.annotation.transparent
 
 case class User(name: String, age: Int)
 

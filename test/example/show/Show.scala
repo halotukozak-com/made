@@ -1,7 +1,8 @@
-package made
+package halotukozak.made
 package example.show
 
 import scala.reflect.ClassTag
+import halotukozak.commons.toArrayOf
 
 trait Show[T]:
   def show(value: T): String

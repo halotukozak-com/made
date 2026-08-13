@@ -1,7 +1,7 @@
-package made
+package halotukozak.made
 package example.transparent
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 
 import scala.annotation.nowarn
 

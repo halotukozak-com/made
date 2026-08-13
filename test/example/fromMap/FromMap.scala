@@ -1,5 +1,6 @@
-package made
+package halotukozak.made
 package example.fromMap
+import halotukozak.commons.toArrayOf
 
 trait FromMap[T]:
   def fromMap(map: Map[String, Any]): T

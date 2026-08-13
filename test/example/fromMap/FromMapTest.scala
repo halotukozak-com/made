@@ -1,7 +1,7 @@
-package made
+package halotukozak.made
 package example.fromMap
 
-import made.annotation.optionalParam
+import halotukozak.made.annotation.optionalParam
 
 class FromMapTest extends munit.FunSuite:
   case class User(name: String, age: Int = 25, @optionalParam address: Option[String]) derives FromMap

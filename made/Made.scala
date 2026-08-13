@@ -1,10 +1,12 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.deriving.Mirror
 import scala.quoted.*
+import halotukozak.*
+import halotukozak.commons.*
 
 /**
  * Extended mirror for Scala types, providing annotation metadata, element-level detail,
@@ -16,7 +18,7 @@ import scala.quoted.*
  *
  * @example
  * {{{
- * import made.*
+ * import halotukozak.made.*
  *
  * case class User(name: String, age: Int)
  *
@@ -105,7 +107,7 @@ sealed trait Made:
  *
  * @example
  * {{{
- * import made.*
+ * import halotukozak.made.*
  *
  * case class User(name: String, age: Int)
  *
@@ -222,7 +224,7 @@ object MadeSubSingletonElem:
  *
  * @see [[MadeFieldElem]]
  * @see [[MadeElem]]
- * @see [[made.annotation.generated]]
+ * @see [[halotukozak.made.annotation.generated]]
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
   /** Always `None`; generated members have no constructor defaults. */
@@ -546,8 +548,8 @@ object Made:
                   case _ => false
               case _ => false
 
-            val elemTypesList = traverseTuple(Type.of[mirroredElemTypes])
-            val elemLabelsList = traverseTuple(Type.of[mirroredElemLabels])
+            val elemTypesList = traverseTupleType(Type.of[mirroredElemTypes])
+            val elemLabelsList = traverseTupleType(Type.of[mirroredElemLabels])
 
             val (exprs, names) = if tSymbol.caseFields.sizeIs == elemTypesList.size then
               elemTypesList
@@ -650,7 +652,7 @@ object Made:
                 }
               } =>
 
-            val (exprs, names) = traverseTuple(Type.of[mirroredElemTypes])
+            val (exprs, names) = traverseTupleType(Type.of[mirroredElemTypes])
               .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                 case ((exprs, names), '[subType]) =>
                   val subType = TypeRepr.of[subType]

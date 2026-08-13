@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 class DefaultTest extends munit.FunSuite:
   test("Default for Option[A]") {
