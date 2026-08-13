@@ -2,7 +2,7 @@ package halotukozak.made
 
 import scala.annotation.{publicInBinary, Annotation}
 import scala.quoted.*
-import commons.*
+import halotukozak.commons.*
 
 extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
   /**

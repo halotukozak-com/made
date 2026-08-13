@@ -1,7 +1,7 @@
 package halotukozak.made
 
 import halotukozak.made.annotation.*
-import commons.containsOnly
+import halotukozak.commons.containsOnly
 
 class PathDependentEvidenceTest extends munit.FunSuite:
   import PathDependentEvidenceTest.*

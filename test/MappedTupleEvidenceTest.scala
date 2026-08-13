@@ -1,7 +1,7 @@
 package halotukozak.made
 
 import halotukozak.made.annotation.optionalParam
-import commons.*
+import halotukozak.commons.*
 
 /**
  * A realistic product-codec derivation that maps over a `Made` mirror's tuples
