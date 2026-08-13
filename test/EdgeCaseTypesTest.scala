@@ -1,8 +1,8 @@
-package made
+package halotukozak.made
 
-import made.annotation.{transparent, MetaAnnotation}
-import made.util.SnippetCompiler
-import made.util.SnippetCompiler.containsMessage
+import halotukozak.made.annotation.{transparent, MetaAnnotation}
+import halotukozak.made.util.SnippetCompiler
+import halotukozak.made.util.SnippetCompiler.containsMessage
 
 class EdgeCaseTypesTest extends munit.FunSuite:
   import EdgeCaseTypesTest.*
@@ -189,7 +189,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
   test("union type as mirrored type is rejected") {
     val diags = SnippetCompiler.compile(
       // language=scala 3
-      """import made.*
+      """import halotukozak.made.*
         |object S { val _ = Made.derived[Int | String] }
         |""".stripMargin,
     )
@@ -202,7 +202,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
   test("non-sealed trait without a Mirror is rejected") {
     val diags = SnippetCompiler.compile(
       // language=scala 3
-      """import made.*
+      """import halotukozak.made.*
         |trait Open
         |object S { val _ = Made.derived[Open] }
         |""".stripMargin,
@@ -216,7 +216,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
   test("multiple parameter lists are rejected by the compiler-provided Mirror") {
     val diags = SnippetCompiler.compile(
       // language=scala 3
-      """import made.*
+      """import halotukozak.made.*
         |case class Multi(a: Int)(b: String)
         |object S { val _ = Made.derived[Multi] }
         |""".stripMargin,
@@ -230,7 +230,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
   test("Made.derived requires a concrete type — type constructor List is rejected") {
     val diags = SnippetCompiler.compile(
       // language=scala 3
-      """import made.*
+      """import halotukozak.made.*
         |object S { val _ = Made.derived[List] }
         |""".stripMargin,
     )

@@ -47,8 +47,8 @@ def mvDeps = Seq(mvn"io.github.halotukozak::made::0.1.0")
 Derive a `Made` mirror for a case class and inspect its fields, labels, and annotations.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 case class User(@name("user_name") name: String, age: Int = 18)
 

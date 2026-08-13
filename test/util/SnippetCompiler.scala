@@ -1,4 +1,4 @@
-package made.util
+package halotukozak.made.util
 
 import dotty.tools.dotc.Driver
 import dotty.tools.dotc.reporting.{Diagnostic, StoreReporter}

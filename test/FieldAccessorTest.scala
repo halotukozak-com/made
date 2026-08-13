@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.*
+import halotukozak.made.annotation.*
 
 class FieldAccessorTest extends munit.FunSuite:
   import FieldAccessorTest.*

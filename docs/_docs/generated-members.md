@@ -34,8 +34,8 @@ The following example defines a `Measurement` type with two constructor fields a
 accessing both tuples.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 case class Measurement(value: Double, unit: String):
   @generated def display: String = s"$value $unit"
@@ -76,8 +76,8 @@ The companion object provides two type aliases: `GeneratedMadeElem.Of[T]` refine
 The following example examines the API on a type with two generated members.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 case class Prod(a: Int, b: String):
   @generated def ab: String = s"$a-$b"
@@ -115,8 +115,8 @@ produces a compile error.
 The following example demonstrates generated members on a sealed trait sum type.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 sealed trait Shape:
   @generated val description: String = "a shape"
@@ -143,8 +143,8 @@ constructor fields and generated members with their labels and computed values. 
 The type class has a single method that takes an instance and returns a formatted description.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 case class SensorReading(id: String, value: Double):
   @generated def summary: String = s"$id=$value"

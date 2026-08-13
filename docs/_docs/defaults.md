@@ -33,8 +33,8 @@ field has both `@whenAbsent(8080)` and a constructor default of `0` - the annota
 default.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 import scala.compiletime.*
 
 case class Config(host: String, @whenAbsent(8080) port: Int = 0, @optionalParam timeout: Option[Int], retries: Int = 3)
@@ -58,8 +58,8 @@ intended design: `@whenAbsent` exists precisely so that derivation authors can a
 used by direct construction.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 case class WithWhenAbsent(@whenAbsent(42) a: Int = 0)
 
@@ -85,8 +85,8 @@ constructor default. Both paths - direct construction via `ServerConfig()` and d
 `MadeFieldElem.default` - produce the same value from a single source of truth.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 case class ServerConfig(@whenAbsent(8080) port: Int = whenAbsent.value)
 
@@ -109,8 +109,8 @@ empty value. Made ships two built-in instances: `Default[Option[A]]` returns `No
 `null`.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 case class Request(@optionalParam body: Option[String], @optionalParam header: String | Null, query: Option[String])
 
@@ -129,8 +129,8 @@ To support your own optional types, provide a `Default` instance. The following 
 and a `Default` instance for `Fallback[String]`, then uses `@optionalParam` on a field of that type.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 
 case class Fallback[A](value: A)
 
@@ -154,8 +154,8 @@ at the expansion site), extracts field labels via `constValueTuple`, and iterate
 values. When a key is absent, it uses `elem.default.getOrElse(throw ...)` to provide the fallback value.
 
 ```scala
-import made.*
-import made.annotation.*
+import halotukozak.made.*
+import halotukozak.made.annotation.*
 import scala.compiletime.*
 
 trait FromMap[T]:

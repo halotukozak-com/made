@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.quoted.*
@@ -17,7 +17,7 @@ import commons.*
  *
  * @example
  * {{{
- * import made.*
+ * import halotukozak.made.*
  *
  * trait Service:
  *   def ping(message: String): Boolean

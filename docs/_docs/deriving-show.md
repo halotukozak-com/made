@@ -29,7 +29,7 @@ The transparent wrapper example uses `Email`, a single-field case class annotate
 derives a `Made.Transparent` mirror instead of `Made.Product`.
 
 ```scala 3 sc-name:email
-import made.annotation.transparent
+import halotukozak.made.annotation.transparent
 
 @transparent
 case class Email(value: String)
@@ -101,7 +101,7 @@ Given the imports `import made.*`, along with the `Show` trait and domain types 
 function is:
 
 ```scala 3 sc-name:derive-product sc-compile-with:show-trait
-import made.*
+import halotukozak.made.*
 
 inline def deriveProduct[T <: Product](m: Made.ProductOf[T]): Show[T] = value =>
   val typeName = compiletime.constValue[m.Label]
@@ -128,7 +128,7 @@ The product example above uses `value.productIterator` to read field values. For
 an instance of the declaring type. `OuterType` is fixed to the mirrored type, so the call type-checks without casts:
 
 ```scala 3 sc-name:fieldelem-apply sc-compile-with:user
-import made.*
+import halotukozak.made.*
 
 val m = Made.derived[User]
 val name *: age *: EmptyTuple = m.elems
@@ -149,7 +149,7 @@ and pairs with `productIterator` on the read side. For a typed alternative, `fro
 a tuple whose shape matches `ElemTypes` exactly:
 
 ```scala 3 sc-name:product-fromtuple sc-compile-with:user
-import made.*
+import halotukozak.made.*
 
 val m = Made.derived[User]
 
@@ -174,7 +174,7 @@ Transparent derivation unwraps the value and delegates to the underlying type's 
 omitted - `Email("alice@example.com")` shows as `alice@example.com`, not `Email(alice@example.com)`.
 
 ```scala 3 sc-name:derive-transparent sc-compile-with:show-trait
-import made.*
+import halotukozak.made.*
 
 inline def deriveTransparent[T](m: Made.TransparentOf[T]): Show[T] = value =>
   val underlyingShow = compiletime.summonInline[Show[m.ElemType]]
@@ -197,7 +197,7 @@ whose `unapply` matches the value - this handles both singleton subtypes (case o
 (case classes) uniformly.
 
 ```scala 3 sc-name:derive-sum sc-compile-with:show-trait
-import made.*
+import halotukozak.made.*
 import scala.reflect.ClassTag
 
 inline def deriveSum[T](m: Made.SumOf[T]): Show[T] = value =>
@@ -223,7 +223,7 @@ value. The `compiletime.summonAll` calls resolve instances for all subtypes at c
 into a single array lookup:
 
 ```scala 3 sc-name:derive-sum-ordinal sc-compile-with:show-trait
-import made.*
+import halotukozak.made.*
 
 inline def deriveSum[T](m: Made.SumOf[T]): Show[T] = value =>
   val subtypeShows =
@@ -244,7 +244,7 @@ For `Show`, a singleton simply outputs its type label. Sum derivation already ha
 matching, but standalone singleton mirrors let you extract the label directly.
 
 ```scala 3 sc-name:derive-singleton sc-compile-with:show-trait
-import made.*
+import halotukozak.made.*
 
 inline def deriveSingleton[T](m: Made.SingletonOf[T]): Show[T] = _ => compiletime.constValue[m.Label]
 ```

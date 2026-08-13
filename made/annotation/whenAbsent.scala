@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 package annotation
 
 import scala.quoted.*
@@ -8,13 +8,13 @@ import scala.quoted.*
  * highest priority in the default resolution chain.
  *
  * The value is by-name (`=> T`) so it is evaluated lazily each time
- * `default` is called on the corresponding [[made.MadeFieldElem]].
+ * `default` is called on the corresponding [[halotukozak.made.MadeFieldElem]].
  *
  * Priority chain: `@whenAbsent` > `@optionalParam` > constructor default.
  *
  * @tparam T the type of the default value
  * @param v the default value, evaluated lazily
- * @see [[made.MadeFieldElem]]
+ * @see [[halotukozak.made.MadeFieldElem]]
  * @see [[optionalParam]]
  */
 class whenAbsent[+T](v: => T) extends MetaAnnotation:

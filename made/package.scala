@@ -1,3 +1,5 @@
+package halotukozak
+
 import scala.quoted.{Expr, Quotes, Type}
 
 /**
@@ -7,12 +9,12 @@ import scala.quoted.{Expr, Quotes, Type}
  * Derive a mirror with `Made.derived[T]`. The resulting mirror subtype depends on `T`:
  * singletons, transparent wrappers, products (case classes), or sums (sealed traits/enums).
  *
- * Each mirror carries an `Elems` tuple of [[made.MadeElem]] subtypes describing
+ * Each mirror carries an `Elems` tuple of [[halotukozak.made.MadeElem]] subtypes describing
  * constructor fields or sum subtypes, and a `Metadata` tuple of `Meta @ann` entries
  * encoding annotations applied to the mirrored type.
  *
- * @see [[made.Made]]
- * @see [[made.MadeElem]]
+ * @see [[halotukozak.made.Made]]
+ * @see [[halotukozak.made.MadeElem]]
  */
 package object made:
 

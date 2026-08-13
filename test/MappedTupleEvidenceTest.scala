@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.optionalParam
+import halotukozak.made.annotation.optionalParam
 import commons.*
 
 /**
@@ -60,7 +60,7 @@ class MappedTupleEvidenceTest extends munit.FunSuite:
       val m = summon[Made.Of[MappedTupleEvidenceTest.User]]
         .asInstanceOf[Made.ProductOf[MappedTupleEvidenceTest.User]]
       m.elems.mapAs[MadeFieldElem][[_ <: MadeFieldElem] =>> Boolean](
-        [e <: MadeFieldElem] => (elem: e) => elem.hasAnnotation[made.annotation.optionalParam],
+        [e <: MadeFieldElem] => (elem: e) => elem.hasAnnotation[halotukozak.made.annotation.optionalParam],
       )
     """)
     assert(errors.nonEmpty)

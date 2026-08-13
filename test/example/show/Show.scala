@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 package example.show
 
 import scala.reflect.ClassTag

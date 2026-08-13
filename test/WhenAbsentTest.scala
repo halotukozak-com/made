@@ -1,6 +1,6 @@
-package made
+package halotukozak.made
 
-import made.annotation.whenAbsent
+import halotukozak.made.annotation.whenAbsent
 
 class WhenAbsentTest extends munit.FunSuite:
   test("whenAbsent.value macro") {

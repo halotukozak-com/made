@@ -1,7 +1,7 @@
-package made
+package halotukozak.made
 package example.generated
 
-import made.annotation.generated
+import halotukozak.made.annotation.generated
 
 class GeneratedTest extends munit.FunSuite:
   test("measurement") {

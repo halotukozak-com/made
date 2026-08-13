@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 package example.fromMap
 import commons.toArrayOf
 

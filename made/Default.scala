@@ -1,4 +1,4 @@
-package made
+package halotukozak.made
 
 /**
  * Type class providing a default "empty" value for optional types.
@@ -7,7 +7,7 @@ package made
  * Instances are defined for `Option[A]` (returns `None`) and `A | Null` (returns `null`).
  *
  * @tparam O the type for which a default value is provided
- * @see [[made.annotation.optionalParam]]
+ * @see [[halotukozak.made.annotation.optionalParam]]
  * @see [[MadeFieldElem]]
  */
 trait Default[O] extends (() => O)

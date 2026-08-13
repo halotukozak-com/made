@@ -1,3 +1,3 @@
-package made
+package halotukozak.made
 
 trait Meta
