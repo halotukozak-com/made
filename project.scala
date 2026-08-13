@@ -15,7 +15,7 @@
 //> using options -Wsafe-init -Werror -Wunused:all
 ////> using options -Yprofile-enabled" -Yprofile-trace:debug/compile-trace.json"
 
-//> using publish.organization io.github.halotukozak
+//> using publish.organization com.halotukozak
 //> using publish.name made
 //> using publish.computeVersion git:tag
 //> using publish.description "M&DE - Mirror Annotations & Default Extraction"
