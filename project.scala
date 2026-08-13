@@ -1,6 +1,6 @@
 //> using scala 3.8.4
 
-//> using dep io.github.halotukozak::commons::0.1.0-SNAPSHOT
+//> using dep io.github.halotukozak::commons::0.1.0
 
 //> using test.dep org.scalameta::munit::1.3.5
 //> using test.dep org.scala-lang::scala3-compiler:3.8.4
