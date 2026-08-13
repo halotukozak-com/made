@@ -1,7 +1,7 @@
 package halotukozak.made
 
 import halotukozak.made.annotation.generated
-import commons.toArrayOf
+import halotukozak.commons.toArrayOf
 
 class GeneratedElemLabelsEvidenceTest extends munit.FunSuite:
   import GeneratedElemLabelsEvidenceTest.*

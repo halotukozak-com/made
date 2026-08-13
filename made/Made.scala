@@ -5,7 +5,8 @@ import halotukozak.made.annotation.*
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.deriving.Mirror
 import scala.quoted.*
-import commons.*
+import halotukozak.*
+import halotukozak.commons.*
 
 /**
  * Extended mirror for Scala types, providing annotation metadata, element-level detail,

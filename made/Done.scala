@@ -3,7 +3,8 @@ package halotukozak.made
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.quoted.*
 import scala.NamedTuple.{AnyNamedTuple, NamedTuple}
-import commons.*
+import halotukozak.*
+import halotukozak.commons.*
 
 /**
  * Mirror for operation-centric types, describing the methods and fields of a type `T`
