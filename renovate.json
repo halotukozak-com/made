@@ -22,6 +22,17 @@
         "//> using (?:test\\.)?dep (?<packageName>[\\w.-]+:[\\w.-]+):(?<currentValue>[\\w.-]+)"
       ],
       "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "description": "scala-cli Scala compiler version in project.scala",
+      "managerFilePatterns": ["/(^|/)project\\.scala$/"],
+      "matchStrings": [
+        "//> using scala (?<currentValue>[\\w.-]+)"
+      ],
+      "depNameTemplate": "scala3",
+      "packageNameTemplate": "scala/scala3",
+      "datasourceTemplate": "github-releases"
     }
   ]
 }
