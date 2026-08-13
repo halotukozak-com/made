@@ -5,7 +5,7 @@ import halotukozak.made.annotation.{name, repeated, AnnotationAggregate, MetaAnn
 import scala.annotation.{tailrec, Annotation, StaticAnnotation}
 import scala.collection.immutable.List
 import scala.quoted.*
-import commons.*
+import halotukozak.*
 
 // $COVERAGE-OFF$
 // like ValueOf but without the implicit search and boxing

@@ -87,7 +87,7 @@ jobs:
           done
 
           # 5. Bundle the maven layout and upload to the Central Portal.
-          ( cd "$PWD/.staging" && zip -qr "$RUNNER_TEMP/bundle.zip" io )
+          ( cd "$PWD/.staging" && zip -qr "$RUNNER_TEMP/bundle.zip" com )
           token="$(printf '%s:%s' "$SONATYPE_USERNAME" "$SONATYPE_PASSWORD" | base64 | tr -d '\n')"
           curl --fail-with-body --request POST \
             --header "Authorization: Bearer $token" \

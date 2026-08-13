@@ -1,6 +1,6 @@
 //> using scala 3.8.4
 
-//> using dep io.github.halotukozak::commons::0.1.0-SNAPSHOT
+//> using dep com.halotukozak::commons::0.1.0
 
 //> using test.dep org.scalameta::munit::1.3.5
 //> using test.dep org.scala-lang::scala3-compiler:3.8.4
@@ -15,7 +15,7 @@
 //> using options -Wsafe-init -Werror -Wunused:all
 ////> using options -Yprofile-enabled" -Yprofile-trace:debug/compile-trace.json"
 
-//> using publish.organization io.github.halotukozak
+//> using publish.organization com.halotukozak
 //> using publish.name made
 //> using publish.computeVersion git:tag
 //> using publish.description "M&DE - Mirror Annotations & Default Extraction"
