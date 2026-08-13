@@ -3,6 +3,7 @@ package made
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.quoted.*
 import scala.NamedTuple.{AnyNamedTuple, NamedTuple}
+import commons.*
 
 /**
  * Mirror for operation-centric types, describing the methods and fields of a type `T`
@@ -447,7 +448,8 @@ extension [Handlers <: Tuple](handlers: Handlers)
    * `(p1: T1, ...) => OutputType` (named-tuple function). The [[Done.HandlersOf]] type
    * alias encodes the precise expected type, and is checked at compile time via `=:=`.
    */
-  transparent inline def to[Target: Done.Of as done](using ValidHandlers[done.Operations, Handlers]): Target =
+  transparent inline def materializeTo[Target: Done.Of as done](using ValidHandlers[done.Operations, Handlers])
+    : Target =
     ${ materializeImpl[Target, Handlers]('handlers) }
 
 // $COVERAGE-OFF$

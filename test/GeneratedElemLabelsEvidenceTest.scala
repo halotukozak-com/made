@@ -1,6 +1,7 @@
 package made
 
 import made.annotation.generated
+import commons.toArrayOf
 
 class GeneratedElemLabelsEvidenceTest extends munit.FunSuite:
   import GeneratedElemLabelsEvidenceTest.*

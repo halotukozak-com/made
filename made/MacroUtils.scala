@@ -5,6 +5,7 @@ import made.annotation.{name, repeated, AnnotationAggregate, MetaAnnotation}
 import scala.annotation.{tailrec, Annotation, StaticAnnotation}
 import scala.collection.immutable.List
 import scala.quoted.*
+import commons.*
 
 // $COVERAGE-OFF$
 // like ValueOf but without the implicit search and boxing
@@ -44,14 +45,6 @@ private[made] def traverseTypes(tpes: Iterable[Type[? <: AnyKind]])(using Quotes
 private[made] def traverseTupleType(tpe: Type[? <: Tuple])(using Quotes): List[Type[? <: AnyKind]] = tpe match
   case '[EmptyTuple] => Nil
   case '[t *: ts] => Type.of[t] :: traverseTupleType(Type.of[ts])
-
-extension (companion: Expr.type)
-  private[made] def ofRefinedTuple(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] = exprs.runtimeChecked match
-    case Nil => '{ EmptyTuple }
-    case '{ $headExpr: h } :: tail =>
-      ofRefinedTuple(tail) match
-        case '{ type t <: Tuple; $tailExpr: t } =>
-          '{ ${ headExpr.asExprOf[h] } *: ${ tailExpr.asExprOf[t] } }
 
 // Compiler-synthesized accessor for a defaulted parameter (e.g. `op$default$1` for
 // `def op(x: Int = 5)`). It carries no `Synthetic`/`Artifact` flag (confirmed via

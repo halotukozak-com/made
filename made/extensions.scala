@@ -1,9 +1,10 @@
 package made
 
-import scala.annotation.{publicInBinary, unused, Annotation}
+import scala.annotation.{publicInBinary, Annotation}
 import scala.quoted.*
+import commons.*
 
-extension [M <: Tuple](self: { type Metadata = M })(using @unused ev: M containsOnly Meta)
+extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
   /**
    * Returns `true` if the mirror's `Metadata` tuple contains an annotation of type `A`.
    *
@@ -39,7 +40,7 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-extension (es: Tuple)(using @unused ev: es.type containsOnly { type Metadata <: Tuple })
+extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
   /**
    * Per-element [[hasAnnotation]] over a tuple whose entries each declare a `Metadata` type member
    * (e.g. a tuple of [[MadeElem]]s, [[GeneratedMadeElem]]s, or a singleton `Made` instance's

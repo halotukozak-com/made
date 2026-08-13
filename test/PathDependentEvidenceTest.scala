@@ -1,6 +1,7 @@
 package made
 
 import made.annotation.*
+import commons.containsOnly
 
 class PathDependentEvidenceTest extends munit.FunSuite:
   import PathDependentEvidenceTest.*

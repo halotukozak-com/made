@@ -1,5 +1,6 @@
 package made
 package example.fromMap
+import commons.toArrayOf
 
 trait FromMap[T]:
   def fromMap(map: Map[String, Any]): T

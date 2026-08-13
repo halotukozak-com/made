@@ -1,6 +1,7 @@
 package made
 
 import made.annotation.optionalParam
+import commons.*
 
 /**
  * A realistic product-codec derivation that maps over a `Made` mirror's tuples

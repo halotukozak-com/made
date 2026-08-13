@@ -2,6 +2,7 @@ package made
 package example.show
 
 import scala.reflect.ClassTag
+import commons.toArrayOf
 
 trait Show[T]:
   def show(value: T): String
