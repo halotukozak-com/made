@@ -32,7 +32,7 @@
       ],
       "depNameTemplate": "scala3",
       "packageNameTemplate": "scala/scala3",
-      "datasourceTemplate": "github-releases"
+      "datasourceTemplate": "github-tags"
     }
   ]
 }
