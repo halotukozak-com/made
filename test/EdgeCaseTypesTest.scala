@@ -1,3 +1,5 @@
+//> using target.platform jvm
+
 package halotukozak.made
 
 import halotukozak.made.annotation.{transparent, MetaAnnotation}

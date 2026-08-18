@@ -1,3 +1,5 @@
+//> using target.platform jvm
+
 package halotukozak.made.util
 
 import dotty.tools.dotc.Driver

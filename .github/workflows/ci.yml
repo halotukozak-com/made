@@ -62,3 +62,24 @@ jobs:
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Compile
         run: scala-cli --power compile . --platform ${{ matrix.platform }} ${{ matrix.args }}
+
+  # JVM is covered by the `test` job above (with coverage/docs); this just runs
+  # the same suite on the other targets to catch platform-specific regressions.
+  test-cross-platform:
+    name: Test (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: scala-js
+            args: "--js-version 1.22.0"
+          - platform: scala-native
+            args: "--native-version 0.5.12"
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup coursier cache
+        uses: coursier/cache-action@v8.1
+      - uses: VirtusLab/scala-cli-setup@v1
+      - name: Run tests
+        run: scala-cli --power test . --platform ${{ matrix.platform }} ${{ matrix.args }}

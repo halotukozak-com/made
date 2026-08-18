@@ -23,7 +23,9 @@ class ShowTest extends munit.FunSuite:
 
     assertEquals(shapeShow.show(Point), "Point")
     assertEquals(shapeShow.show(Circle(3.14)), "Circle(radius = 3.14)")
-    assertEquals(shapeShow.show(Rectangle(2.0, 5.0)), "Rectangle(width = 2.0, height = 5.0)")
+    // Whole-number doubles are avoided here: Double#toString renders "2.0" on the
+    // JVM but "2" on Scala.js, and this example's Show[Double] is plain .toString.
+    assertEquals(shapeShow.show(Rectangle(2.5, 5.25)), "Rectangle(width = 2.5, height = 5.25)")
   }
 
   test("showSingleton") {
