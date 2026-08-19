@@ -41,6 +41,10 @@ jobs:
           -snippet-compiler:compile \
           -source-links:"src=github://halotukozak/made?tag=${{ github.ref_name }}" \
           -revision:${{ github.ref_name }}
+      - name: Inject Umami analytics
+        run: |
+          find scala-doc -name '*.html' -exec sed -i \
+            's#</head>#<script defer src="https://cloud.umami.is/script.js" data-website-id="f15f9eef-35ab-4b2a-ba14-f7e079e7de28"></script></head>#' {} +
       - name: Setup Pages
         uses: actions/configure-pages@v6
       - name: Upload artifact
