@@ -22,7 +22,7 @@ class MappedTupleEvidenceTest extends munit.FunSuite:
 
     // age carries a constructor default; the per-field default mapping resolved it
     assertEquals(codec.defaults.length, 3)
-    assertEquals(codec.defaults(1), Some(25))
+    assertEquals(codec.defaults(1), 25)
 
     // the captured constructor still rebuilds a value end-to-end
     assertEquals(codec.ctor(Array("Bob", 30, Some("x"))), User("Bob", 30, Some("x")))

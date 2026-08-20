@@ -128,7 +128,7 @@ class RuntimeAccessTest extends munit.FunSuite:
     val labels = m.elemLabels.toList.asInstanceOf[List[String]]
     val elems = m.elems.toList.asInstanceOf[List[MadeFieldElem]]
     val zipped = labels.zip(elems.map(_.default))
-    assertEquals(zipped, List(("x", None), ("y", Some("hello")), ("z", Some(true))))
+    assertEquals(zipped, List(("x", null), ("y", "hello"), ("z", true)))
   }
 
   // --- Seq[Made] ---
