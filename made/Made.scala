@@ -70,10 +70,10 @@ sealed trait Made:
   type GeneratedElems <: Tuple
   def generatedElems: GeneratedElems
 
-  /** The type of `T`'s companion object, or `Null` if `T` has no companion. */
-  type Companion
+  /** The type of `T`'s companion object, or `NotExists` if `T` has no companion. */
+  type Companion <: AnyRef | NotExists
 
-  /** The companion object of `T`, or `null` if `T` has no companion (e.g. singletons). */
+  /** The companion object of `T`, or `NotExists` if `T` has no companion (e.g. singletons). */
   val companion: Companion
 
   /**
@@ -170,11 +170,11 @@ sealed trait MadeFieldElem extends MadeElem:
    *  1. `@whenAbsent(value)` - explicit default from annotation (highest priority)
    *  2. `@optionalParam` - uses `Default[T]` for option-like types
    *  3. Constructor default - the Scala-level default parameter value
-   *  4. `null` - no default available
+   *  4. `NotExists` - no default available
    *
-   * @return the default value if available, `null` otherwise
+   * @return the default value if available, `NotExists` otherwise
    */
-  def default: Type | Null
+  def default: Type | NotExists
 
 object MadeFieldElem:
   type Of[T] = MadeFieldElem { type Type = T }
@@ -233,8 +233,8 @@ object MadeSubSingletonElem:
  * @see [[halotukozak.made.annotation.generated]]
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
-  /** Always `null`; generated members have no constructor defaults. */
-  final def default: Null = null
+  /** Always `NotExists`; generated members have no constructor defaults. */
+  final def default: NotExists = NotExists
 
 object GeneratedMadeElem:
   type Of[T] = GeneratedMadeElem { type Type = T }
@@ -315,6 +315,7 @@ object Made:
     // the deriver sees the underlying case class while preserving opaque boundaries.
     val tTpe = TypeRepr.of[T].dealiasKeepOpaques
     val tSymbol = tTpe.typeSymbol
+    val tCompanion = tSymbol.companionModule
 
     val generatedElems = for
       member <- (tSymbol.fieldMembers ++ tSymbol.methodMembers).distinct.sortBy(_.pos)
@@ -372,7 +373,7 @@ object Made:
             }
           }
 
-    def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[E | Null] =
+    def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[E | NotExists] =
       def fromWhenAbsent = symbol
         .getAnnotationOf[whenAbsent[?]]
         .map:
@@ -388,15 +389,16 @@ object Made:
             report.error(s"optionalParam should be used only for types with Default defined")
             '{ ??? }
       }
-      def fromDefaultValue = tSymbol.companionModule.methodMembers.collectFirst:
-        case m if m.name.startsWith("$lessinit$greater$default$" + (index + 1)) =>
-          val ref = Ref(m)
-          val applied = tTpe.typeArgs match
-            case Nil => ref
-            case args => ref.appliedToTypes(args)
-          applied.asExprOf[E]
+      def fromDefaultValue =
+        tCompanion.methodMembers.collectFirst:
+          case m if m.name.startsWith("$lessinit$greater$default$" + (index + 1)) =>
+            val ref = Ref(m)
+            val applied = tTpe.typeArgs match
+              case Nil => ref
+              case args => ref.appliedToTypes(args)
+            applied.asExprOf[E]
 
-      fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue getOrElse '{ null }
+      fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue getOrElse '{ NotExists }
 
     def newTFrom(args: List[Expr[?]]): Expr[T] =
       New(TypeTree.of[T])
@@ -404,23 +406,17 @@ object Made:
         .appliedToArgs(args.map(_.asTerm))
         .asExprOf[T]
 
-    // Expr typed precisely as the companion's singleton type (recovered later via a `'{ type c; ... }`
-    // quote pattern), or `null: Null` when the symbol has no companion module.
-    def companionExprOf(symbol: Symbol): Expr[Any] =
-      val companionSymbol = symbol.companionModule
-      if companionSymbol.isNoSymbol then '{ null } else Ref(companionSymbol).asExprOf[Any]
-
     (
       metaTypeOf(tSymbol),
       labelTypeOf(tSymbol, nameOf[T]),
       Expr.ofRefinedTuple(generatedElems.toList),
-      companionExprOf(tSymbol),
+      if tCompanion.isNoSymbol then '{ NotExists } else Ref(tCompanion).asExprOf[AnyRef],
     ).runtimeChecked match
       case (
             '[type meta <: Tuple; meta],
             '[type label <: String; label],
             '{ type generatedElems <: Tuple; $generatedElemsExpr: generatedElems },
-            '{ type companion; $companionExpr: companion },
+            '{ type companion <: AnyRef | NotExists; $companionExpr: companion },
           ) =>
         def deriveSingleton = Option.when(tTpe.isSingleton || tTpe <:< TypeRepr.of[Unit]) {
           Type.of[T] match
@@ -435,14 +431,14 @@ object Made:
                   def generatedElems: GeneratedElems = $generatedElemsExpr
                   def value: s = singleValueOf[s]
 
-                  type Companion = Null
-                  val companion: Null = null
+                  type Companion = NotExists
+                  val companion: NotExists = NotExists
                 .asInstanceOf[
                   Made.SingletonOf[T] {
                     type Label = label
                     type Metadata = meta
                     type GeneratedElems = generatedElems
-                    type Companion = Null
+                    type Companion = NotExists
                   },
                 ]
               }
@@ -457,14 +453,14 @@ object Made:
                   def generatedElems: GeneratedElems = $generatedElemsExpr
                   def value: Unit = ()
 
-                  type Companion = Null
-                  val companion: Null = null
+                  type Companion = NotExists
+                  val companion: NotExists = NotExists
                 .asInstanceOf[
                   Made.SingletonOf[T] {
                     type Label = label
                     type Metadata = meta
                     type GeneratedElems = generatedElems
-                    type Companion = Null
+                    type Companion = NotExists
                   },
                 ]
               }
@@ -635,7 +631,7 @@ object Made:
                           .asInstanceOf[scala.Product]
                           .productElement(${ Expr(index) })
                           .asInstanceOf[fieldTpe]
-                        def default: Null = null
+                        def default: NotExists = NotExists
                       : MadeFieldElem {
                         type Type = fieldTpe
                         type Label = mirrorLabel
@@ -744,9 +740,8 @@ object Made:
           case x => report.errorAndAbort(s"Unexpected Mirror type: ${x.show}")
         }
 
-        deriveSingleton orElse deriveTransparent orElse deriveValueClass orElse deriveProduct orElse deriveSum getOrElse {
+        deriveSingleton orElse deriveTransparent orElse deriveValueClass orElse deriveProduct orElse deriveSum getOrElse:
           report.errorAndAbort(s"Unsupported Mirror type for ${tTpe.show}")
-        }
   // $COVERAGE-ON$
 
   /**

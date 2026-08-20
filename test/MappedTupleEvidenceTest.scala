@@ -77,7 +77,7 @@ object MappedTupleEvidenceTest:
     final class Product[T](
       val labels: Array[String],
       val codecs: Array[MCodec[Any]],
-      val defaults: Array[Any | Null],
+      val defaults: Array[Any | NotExists],
       val optionalFlags: Array[Boolean],
       val ctor: Array[Any] => T,
     ) extends MCodec[T]
@@ -92,8 +92,10 @@ object MappedTupleEvidenceTest:
       // (A covariant `Show[+T]` would resolve here automatically via the `F[+_]` given.)
       compiletime.summonAll[Tuple.Map[m.ElemTypes, MCodec]].toArrayOf[MCodec[Any]](using containsOnly.refl),
       m.elems
-        .mapAs[MadeFieldElem][[e <: MadeFieldElem] =>> Any | Null]([e <: MadeFieldElem] => (elem: e) => elem.default)
-        .toArrayOf[Any | Null],
+        .mapAs[MadeFieldElem][[e <: MadeFieldElem] =>> Any | NotExists]([e <: MadeFieldElem] =>
+          (elem: e) => elem.default,
+        )
+        .toArrayOf[Any | NotExists],
       // `hasAnnotations` declares `Tuple.Map[es.type, [_] =>> Boolean]`, so the `constMap` given
       // proves `containsOnly Boolean` and `toArrayOf[Boolean]` resolves with no witness.
       m.elems.hasAnnotations[optionalParam].toArrayOf[Boolean],
@@ -125,7 +127,7 @@ object MappedTupleEvidenceTest:
       case m: Made.ProductOf[T & scala.Product] =>
         m.elems
           .mapAs[MadeFieldElem][[_ <: MadeFieldElem] =>> Boolean]([e <: MadeFieldElem] =>
-            (elem: e) => elem.default != null,
+            (elem: e) => elem.default != NotExists,
           )
           .toArrayOf[Boolean]
 

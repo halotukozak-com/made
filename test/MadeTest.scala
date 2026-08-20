@@ -473,22 +473,30 @@ class MadeTest extends munit.FunSuite:
     assert(mirror.companion eq TransparentClass)
   }
 
-  test("Made companion is null for a singleton object without its own companion") {
+  test("Made companion is NotExists for a singleton object without its own companion") {
     val mirror: Made.Singleton {
       type Type = SimpleObject.type
-      type Companion = Null
+      type Companion = NotExists
     } = Made.derived[SimpleObject.type]
 
-    assert(mirror.companion == null)
+    assert(mirror.companion.notExists)
+    assert(!mirror.companion.exists)
   }
 
-  test("Made companion is null for Unit") {
+  test("Made companion is NotExists for Unit") {
     val mirror: Made.Singleton {
       type Type = Unit
-      type Companion = Null
+      type Companion = NotExists
     } = Made.derived[Unit]
 
-    assert(mirror.companion == null)
+    assert(mirror.companion.notExists)
+  }
+
+  test("Made.companion.exists is true when a companion is present") {
+    val mirror = Made.derived[SimpleCaseClass]
+
+    assert(mirror.companion.exists)
+    assert(!mirror.companion.notExists)
   }
 
   test("Made preserves the companion object's own type members") {
