@@ -8,12 +8,12 @@ order: 3
 This guide explains how Made resolves default values for product fields during derivation. When you derive a type class
 that constructs product instances from partial data - a JSON decoder, a config loader, a builder - you need to know
 which fields have fallback values and what those values are. Made makes this available through `MadeFieldElem.default`,
-a method on each field element that returns `Option[Type]` resolved at compile time.
+a method on each field element that returns `Type | Null` resolved at compile time.
 
 The default value for each field is determined by a three-level priority chain. The Made macro inspects annotations and
 constructor signatures at compile time, selects the highest-priority source, and bakes the result into the field
-element. At runtime, calling `.default` simply returns the pre-computed `Option` - there is no reflection or annotation
-processing at runtime.
+element. At runtime, calling `.default` simply returns the pre-computed value (or `null` if none is available) - there
+is no reflection or annotation processing at runtime.
 
 This guide assumes you have read the [type class derivation guide](deriving-show.md) and understand Made mirrors,
 `MadeFieldElem`, and the `constValueTuple` pattern for label extraction.
@@ -25,7 +25,7 @@ Made resolves default values using the following priority chain (first match win
 1. `@whenAbsent(value)` - explicit annotation default (highest priority)
 2. `@optionalParam` - uses the `Default[T]` type class to produce an empty value
 3. Constructor default - Scala's standard default parameter value
-4. `None` - no default available
+4. `null` - no default available
 
 The following type demonstrates all four levels in a single definition. The `host` field has no default. The `port`
 field has both `@whenAbsent(8080)` and a constructor default of `0` - the annotation wins. The `timeout` field uses
@@ -117,13 +117,13 @@ case class Request(@optionalParam body: Option[String], @optionalParam header: S
 val mirror = Made.derived[Request]
 val (body, header, query) = mirror.elems
 
-assert(body.default.contains(None))
-assert(header.default.contains(null: String | Null))
-assert(query.default.isEmpty)
+assert(body.default == None)
+assert(header.default == null)
+assert(query.default == null)
 ```
 
 The `query` field has type `Option[String]` but no `@optionalParam` annotation and no constructor default, so its
-`default` is `None` (the `Option` meaning "no default available", not the `Option[String]` value `None`).
+`default` is `null` (meaning "no default available", not the `Option[String]` value `None`).
 
 To support your own optional types, provide a `Default` instance. The following example defines a `Fallback[A]` wrapper
 and a `Default` instance for `Fallback[String]`, then uses `@optionalParam` on a field of that type.
@@ -191,6 +191,6 @@ assert(bob == User("Bob", 25, Some("Cracow")))
 ```
 
 The `User` type has a constructor default of `25` for `age` and optional address param. When the map contains only
-`"name"`, the derivation falls back to `elem.default` (which is `Some(25)` and `Some(None)`) and constructs
+`"name"`, the derivation falls back to `elem.default` (which is `25` and `None`) and constructs
 `User("Alice", 25)`. Without the default, calling`fromMap(Map("name" -> "Alice"))` would throw an
 `IllegalArgumentException`.
