@@ -90,8 +90,8 @@ val gAb *: gLen *: EmptyTuple = mirror.generatedElems
 val p = Prod(2, "x")
 assert(gAb(p) == "2-x")
 assert(gLen(p) == 1)
-assert(gAb.default.isEmpty)
-assert(gLen.default.isEmpty)
+assert(gAb.default == null)
+assert(gLen.default == null)
 ```
 
 Calling `gAb(p)` invokes the generated def `ab` on `p`, producing `"2-x"`. Calling `gAb.default` returns `None` because

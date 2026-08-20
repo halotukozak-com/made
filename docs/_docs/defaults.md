@@ -42,10 +42,10 @@ case class Config(host: String, @whenAbsent(8080) port: Int = 0, @optionalParam 
 val mirror = Made.derived[Config]
 val (host, port, timeout, retries) = mirror.elems
 
-assert(host.default.isEmpty)
-assert(port.default.contains(8080))
-assert(timeout.default.contains(None))
-assert(retries.default.contains(3))
+assert(host.default == null)
+assert(port.default == 8080)
+assert(timeout.default == None)
+assert(retries.default == 3)
 ```
 
 ## @whenAbsent: Annotation Defaults
@@ -66,11 +66,11 @@ case class WithWhenAbsent(@whenAbsent(42) a: Int = 0)
 val mirror = Made.derived[WithWhenAbsent]
 val elem *: EmptyTuple = mirror.elems
 
-assert(elem.default.contains(42))
+assert(elem.default == 42)
 assert(WithWhenAbsent().a == 0)
 ```
 
-The assertion shows that `elem.default` returns `Some(42)` (from the annotation), while `WithWhenAbsent()` constructs
+The assertion shows that `elem.default` returns `42` (from the annotation), while `WithWhenAbsent()` constructs
 with `a = 0` (the constructor default). The two values are intentionally different - the annotation controls what
 derivation code sees, while the constructor default controls what direct callers get.
 
@@ -95,7 +95,7 @@ assert(ServerConfig().port == 8080)
 val mirror = Made.derived[ServerConfig]
 val elem *: EmptyTuple = mirror.elems
 
-assert(elem.default.contains(8080))
+assert(elem.default == 8080)
 ```
 
 ## @optionalParam and Default
@@ -141,7 +141,7 @@ case class Settings(@optionalParam label: Fallback[String])
 val mirror = Made.derived[Settings]
 val elem *: EmptyTuple = mirror.elems
 
-assert(elem.default.contains(Fallback("N/A")))
+assert(elem.default == Fallback("N/A"))
 ```
 
 ## Using Defaults in Derivation
@@ -175,7 +175,7 @@ object FromMap:
       .map: (label, elem) =>
         source
           .get(label)
-          .orElse(elem.default)
+          .orElse(Option(elem.default))
           .getOrElse(throw IllegalArgumentException(s"Missing key '$label' with no default"))
 
     m.fromUnsafeArray(values.toArray)
