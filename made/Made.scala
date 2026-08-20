@@ -164,9 +164,9 @@ sealed trait MadeFieldElem extends MadeElem:
    *  1. `@whenAbsent(value)` - explicit default from annotation (highest priority)
    *  2. `@optionalParam` - uses `Default[T]` for option-like types
    *  3. Constructor default - the Scala-level default parameter value
-   *  4. `None` - no default available
+   *  4. `null` - no default available
    *
-   * @return the default value if available, `None` otherwise
+   * @return the default value if available, `null` otherwise
    */
   def default: Type | Null
 
@@ -227,7 +227,7 @@ object MadeSubSingletonElem:
  * @see [[halotukozak.made.annotation.generated]]
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
-  /** Always `None`; generated members have no constructor defaults. */
+  /** Always `null`; generated members have no constructor defaults. */
   final def default: Null = null
 
 object GeneratedMadeElem:
