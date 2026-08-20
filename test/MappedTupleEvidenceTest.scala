@@ -22,7 +22,7 @@ class MappedTupleEvidenceTest extends munit.FunSuite:
 
     // age carries a constructor default; the per-field default mapping resolved it
     assertEquals(codec.defaults.length, 3)
-    assertEquals(codec.defaults(1), Some(25))
+    assertEquals(codec.defaults(1), 25)
 
     // the captured constructor still rebuilds a value end-to-end
     assertEquals(codec.ctor(Array("Bob", 30, Some("x"))), User("Bob", 30, Some("x")))
@@ -77,7 +77,7 @@ object MappedTupleEvidenceTest:
     final class Product[T](
       val labels: Array[String],
       val codecs: Array[MCodec[Any]],
-      val defaults: Array[Option[Any]],
+      val defaults: Array[Any | Null],
       val optionalFlags: Array[Boolean],
       val ctor: Array[Any] => T,
     ) extends MCodec[T]
@@ -92,8 +92,8 @@ object MappedTupleEvidenceTest:
       // (A covariant `Show[+T]` would resolve here automatically via the `F[+_]` given.)
       compiletime.summonAll[Tuple.Map[m.ElemTypes, MCodec]].toArrayOf[MCodec[Any]](using containsOnly.refl),
       m.elems
-        .mapAs[MadeFieldElem][[e <: MadeFieldElem] =>> Option[Any]]([e <: MadeFieldElem] => (elem: e) => elem.default)
-        .toArrayOf[Option[Any]],
+        .mapAs[MadeFieldElem][[e <: MadeFieldElem] =>> Any | Null]([e <: MadeFieldElem] => (elem: e) => elem.default)
+        .toArrayOf[Any | Null],
       // `hasAnnotations` declares `Tuple.Map[es.type, [_] =>> Boolean]`, so the `constMap` given
       // proves `containsOnly Boolean` and `toArrayOf[Boolean]` resolves with no witness.
       m.elems.hasAnnotations[optionalParam].toArrayOf[Boolean],
@@ -125,7 +125,7 @@ object MappedTupleEvidenceTest:
       case m: Made.ProductOf[T & scala.Product] =>
         m.elems
           .mapAs[MadeFieldElem][[_ <: MadeFieldElem] =>> Boolean]([e <: MadeFieldElem] =>
-            (elem: e) => elem.default.isDefined,
+            (elem: e) => elem.default != null,
           )
           .toArrayOf[Boolean]
 

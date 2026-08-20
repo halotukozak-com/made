@@ -152,9 +152,9 @@ class GeneratedAnnotationTest extends munit.FunSuite:
   test("all generated defaults are None") {
     val m = Made.derived[MultiGen]
     val (g1, g2, g3) = m.generatedElems
-    assertEquals(g1.default, None)
-    assertEquals(g2.default, None)
-    assertEquals(g3.default, None)
+    assertEquals(g1.default, null)
+    assertEquals(g2.default, null)
+    assertEquals(g3.default, null)
   }
 
   // --- @name on generated ---
