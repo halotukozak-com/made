@@ -32,7 +32,8 @@
       ],
       "depNameTemplate": "scala3",
       "packageNameTemplate": "scala/scala3",
-      "datasourceTemplate": "github-tags"
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "semver"
     }
   ]
 }
