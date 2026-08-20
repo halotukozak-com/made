@@ -64,11 +64,17 @@ sealed trait Made:
 
   /** Tuple of [[MadeElem]] subtypes representing constructor fields (for products) or subtypes (for sums). */
   type Elems <: Tuple
+  def elems: Elems
 
   /** Tuple of [[GeneratedMadeElem]] for members annotated with `@generated`. */
   type GeneratedElems <: Tuple
-  def elems: Elems
   def generatedElems: GeneratedElems
+
+  /** The type of `T`'s companion object, or `Null` if `T` has no companion. */
+  type Companion
+
+  /** The companion object of `T`, or `null` if `T` has no companion (e.g. singletons). */
+  val companion: Companion
 
   /**
    * Path-dependent evidence: the mirror's [[Elems]] tuple is guaranteed by the deriver to be
@@ -398,15 +404,23 @@ object Made:
         .appliedToArgs(args.map(_.asTerm))
         .asExprOf[T]
 
+    // Expr typed precisely as the companion's singleton type (recovered later via a `'{ type c; ... }`
+    // quote pattern), or `null: Null` when the symbol has no companion module.
+    def companionExprOf(symbol: Symbol): Expr[Any] =
+      val companionSymbol = symbol.companionModule
+      if companionSymbol.isNoSymbol then '{ null } else Ref(companionSymbol).asExprOf[Any]
+
     (
       metaTypeOf(tSymbol),
       labelTypeOf(tSymbol, nameOf[T]),
       Expr.ofRefinedTuple(generatedElems.toList),
+      companionExprOf(tSymbol),
     ).runtimeChecked match
       case (
             '[type meta <: Tuple; meta],
             '[type label <: String; label],
             '{ type generatedElems <: Tuple; $generatedElemsExpr: generatedElems },
+            '{ type companion; $companionExpr: companion },
           ) =>
         def deriveSingleton = Option.when(tTpe.isSingleton || tTpe <:< TypeRepr.of[Unit]) {
           Type.of[T] match
@@ -420,11 +434,15 @@ object Made:
 
                   def generatedElems: GeneratedElems = $generatedElemsExpr
                   def value: s = singleValueOf[s]
+
+                  type Companion = Null
+                  val companion: Null = null
                 .asInstanceOf[
                   Made.SingletonOf[T] {
                     type Label = label
                     type Metadata = meta
                     type GeneratedElems = generatedElems
+                    type Companion = Null
                   },
                 ]
               }
@@ -438,11 +456,15 @@ object Made:
 
                   def generatedElems: GeneratedElems = $generatedElemsExpr
                   def value: Unit = ()
+
+                  type Companion = Null
+                  val companion: Null = null
                 .asInstanceOf[
                   Made.SingletonOf[T] {
                     type Label = label
                     type Metadata = meta
                     type GeneratedElems = generatedElems
+                    type Companion = Null
                   },
                 ]
               }
@@ -473,11 +495,15 @@ object Made:
 
                   def unwrap(value: Type): ElemType = tw.unwrap(value)
                   def wrap(value: ElemType): Type = tw.wrap(value)
+
+                  type Companion = companion
+                  val companion: Companion = $companionExpr
                 : Made.TransparentOf[T] {
                   type Label = label
                   type ElemType = fieldType
                   type Metadata = meta
                   type Elems = madeFieldElem *: EmptyTuple
+                  type Companion = companion
                 }
               }
         }
@@ -505,11 +531,15 @@ object Made:
                     ${ newTFrom(List('{ product(0).asInstanceOf[fieldType] })) }
                   def fromTuple(elems: ElemTypes): T =
                     ${ newTFrom(List('{ elems.head.asInstanceOf[fieldType] })) }
+
+                  type Companion = companion
+                  val companion: Companion = $companionExpr
                 : Made.ProductOf[T] {
                   type Label = label
                   type Metadata = meta
                   type Elems = madeFieldElem *: EmptyTuple
                   type GeneratedElems = generatedElems
+                  type Companion = companion
                 }
               }
         }
@@ -633,11 +663,15 @@ object Made:
 
                     type GeneratedElems = generatedElems
                     def generatedElems: GeneratedElems = $generatedElemsExpr
+
+                    type Companion = companion
+                    val companion: Companion = $companionExpr
                   : Made.ProductOf[T] {
                     type Label = label
                     type Metadata = meta
                     type Elems = mirroredElems
                     type GeneratedElems = generatedElems
+                    type Companion = companion
                   }
                 }
         }
@@ -694,11 +728,15 @@ object Made:
 
                     type GeneratedElems = generatedElems
                     def generatedElems: GeneratedElems = $generatedElemsExpr
+
+                    type Companion = companion
+                    val companion: Companion = $companionExpr
                   : Made.SumOf[T] {
                     type Label = label
                     type Metadata = meta
                     type Elems = mirroredElems
                     type GeneratedElems = generatedElems
+                    type Companion = companion
                   }
                 }
               case '{ $_ : x } => report.errorAndAbort(s"Unexpected Mirror type: ${Type.show[x]}")
