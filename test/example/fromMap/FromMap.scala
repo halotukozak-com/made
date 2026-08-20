@@ -19,7 +19,7 @@ object FromMap:
       .map: (label, elem) =>
         source
           .get(label)
-          .orElse(elem.default)
+          .orElse(Option(elem.default))
           .getOrElse(throw IllegalArgumentException(s"Missing key '$label' with no default"))
 
     m.fromUnsafeArray(values.toArray)

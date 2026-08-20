@@ -70,13 +70,13 @@ class RuntimeAccessTest extends munit.FunSuite:
     val m = Made.derived[RAWithDefaults]
     val elems = m.elems.toList.asInstanceOf[List[MadeFieldElem]]
     val defaults = elems.map(_.default)
-    assertEquals(defaults, List(None, Some("hello"), Some(true)))
+    assertEquals(defaults, List(null, "hello", true))
   }
 
   test("Seq[GeneratedMadeElem].map(_.default) all None") {
     val m = Made.derived[RAWithGenerated]
     val genElems = m.generatedElems.toList.asInstanceOf[List[GeneratedMadeElem]]
-    assertEquals(genElems.map(_.default), List(None, None))
+    assertEquals(genElems.map(_.default), List(null, null))
   }
 
   // --- Runtime .value works on erased MadeSubSingletonElem ---
@@ -174,7 +174,7 @@ class RuntimeAccessTest extends munit.FunSuite:
   test("round-trip: collect defaults and build instance") {
     val m = Made.derived[RAAllDefaults]
     val elems = m.elems.toList.asInstanceOf[List[MadeFieldElem]]
-    val defaults = elems.map(_.default.get)
+    val defaults = elems.map(_.default)
     val instance = m.fromUnsafeArray(defaults.toArray)
     assertEquals(instance, RAAllDefaults())
   }

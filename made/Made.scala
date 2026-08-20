@@ -168,7 +168,7 @@ sealed trait MadeFieldElem extends MadeElem:
    *
    * @return the default value if available, `None` otherwise
    */
-  def default: Option[Type]
+  def default: Type | Null
 
 object MadeFieldElem:
   type Of[T] = MadeFieldElem { type Type = T }
@@ -228,7 +228,7 @@ object MadeSubSingletonElem:
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
   /** Always `None`; generated members have no constructor defaults. */
-  final def default: Option[Type] = None
+  final def default: Null = null
 
 object GeneratedMadeElem:
   type Of[T] = GeneratedMadeElem { type Type = T }
@@ -366,7 +366,7 @@ object Made:
             }
           }
 
-    def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[Option[E]] = Expr.ofOption {
+    def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[E | Null] =
       def fromWhenAbsent = symbol
         .getAnnotationOf[whenAbsent[?]]
         .map:
@@ -390,8 +390,7 @@ object Made:
             case args => ref.appliedToTypes(args)
           applied.asExprOf[E]
 
-      fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue
-    }
+      fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue getOrElse '{ null }
 
     def newTFrom(args: List[Expr[?]]): Expr[T] =
       New(TypeTree.of[T])
@@ -606,7 +605,7 @@ object Made:
                           .asInstanceOf[scala.Product]
                           .productElement(${ Expr(index) })
                           .asInstanceOf[fieldTpe]
-                        def default = ${ Expr(None) }
+                        def default: Null = null
                       : MadeFieldElem {
                         type Type = fieldTpe
                         type Label = mirrorLabel
