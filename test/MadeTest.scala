@@ -1,10 +1,11 @@
 package halotukozak.made
 
 import halotukozak.made.annotation.*
+
 import scala.deriving.Mirror.Sum
 
 class MadeTest extends munit.FunSuite:
-  test("DerMirror for case class") {
+  test("Made for case class") {
     val _: Made {
       type Type = SimpleCaseClass
       type Label = "SimpleCaseClass"
@@ -23,7 +24,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[SimpleCaseClass]
   }
 
-  test("DerMirror for case class with no fields") {
+  test("Made for case class with no fields") {
     val _: Made.Product {
       type Type = NoFields
       type Label = "NoFields"
@@ -32,7 +33,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[NoFields]
   }
 
-  test("DerMirror for generic case class") {
+  test("Made for generic case class") {
     val _: Made.Product {
       type Type = Box[Int]
       type Label = "Box"
@@ -46,7 +47,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[Box[Int]]
   }
 
-  test("DerMirror for enum") {
+  test("Made for enum") {
     val _: Made.Sum {
       type Type = SimpleEnum
       type Label = "SimpleEnum"
@@ -63,7 +64,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[SimpleEnum]
   }
 
-  test("DerMirror for object") {
+  test("Made for object") {
     val mirror: Made.Singleton {
       type Type = SimpleObject.type
       type Label = "SimpleObject"
@@ -74,7 +75,7 @@ class MadeTest extends munit.FunSuite:
     assert(mirror.value == SimpleObject)
   }
 
-  test("DerMirror for Unit") {
+  test("Made for Unit") {
     val mirror: Made.Singleton {
       type Type = Unit
       type Label = "Unit"
@@ -83,7 +84,7 @@ class MadeTest extends munit.FunSuite:
     assert(mirror.value == ())
   }
 
-  test("DerMirror for value class") {
+  test("Made for value class") {
     val mirror: Made.Product {
       type Type = ValueClass
       type Label = "ValueClass"
@@ -92,7 +93,7 @@ class MadeTest extends munit.FunSuite:
     assert(mirror.fromUnsafeArray(Array("test")) == ValueClass("test"))
   }
 
-  test("DerMirror for @transparent case class") {
+  test("Made for @transparent case class") {
     val mirror: Made.Transparent {
       type Type = TransparentClass
       type Label = "TransparentClass"
@@ -130,19 +131,19 @@ class MadeTest extends munit.FunSuite:
     assert(annot.value == "foo")
   }
 
-  test("DerMirror with annotations") {
+  test("Made with annotations") {
     val _: Made {
       type Metadata = (Meta @Annotation2) *: (Meta @Annotation1) *: EmptyTuple
     } = Made.derived[AnnotatedCaseClass]
   }
 
-  test("DerMirror with many annotations") {
+  test("Made with many annotations") {
     val _: Made {
       type Metadata = (Meta @Annotation3) *: (Meta @Annotation2) *: (Meta @Annotation1) *: EmptyTuple
     } = Made.derived[ManyAnnotated]
   }
 
-  test("DerMirror for enum with @name") {
+  test("Made for enum with @name") {
     val _: Made.Sum {
       type Type = NamedEnum
       type Label = "NamedEnum"
@@ -159,7 +160,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[NamedEnum]
   }
 
-  test("DerMirror for recursive ADT") {
+  test("Made for recursive ADT") {
     val _: Made.Sum {
       type Type = Recursive
       type Label = "Recursive"
@@ -176,7 +177,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[Recursive]
   }
 
-  test("DerMirror for ADT with mixed cases") {
+  test("Made for ADT with mixed cases") {
     val _: Made.Sum {
       type Type = MixedADT
       type Label = "MixedADT"
@@ -193,7 +194,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[MixedADT]
   }
 
-  test("DerMirror should include @generated members") {
+  test("Made should include @generated members") {
     val m: Made {
       type Type = HasGenerated
       type Label = "HasGenerated"
@@ -216,7 +217,7 @@ class MadeTest extends munit.FunSuite:
     assert(m.generatedElems(0).apply(instance) == 4)
   }
 
-  test("DerMirror for HK case class") {
+  test("Made for HK case class") {
     val _: Made.Product {
       type Type = HKBox[List]
       type Label = "HKBox"
@@ -230,7 +231,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[HKBox[List]]
   }
 
-  test("DerMirror for HK sum") {
+  test("Made for HK sum") {
     val _: Made.Sum {
       type Type = HKADT[List, Int]
       type Label = "HKADT"
@@ -247,7 +248,7 @@ class MadeTest extends munit.FunSuite:
     } = Made.derived[HKADT[List, Int]]
   }
 
-  test("DerMirror for recursive case class") {
+  test("Made for recursive case class") {
     val _: Made.Product {
       type Type = Recursive.Next
       type Label = "Next"
@@ -267,7 +268,7 @@ class MadeTest extends munit.FunSuite:
     assert(result == Recursive.Next(Recursive.End))
   }
 
-  test("DerMirror for recursive case class with Option") {
+  test("Made for recursive case class with Option") {
     val _: Made.Product {
       type Type = RecTree
       type Label = "RecTree"
@@ -299,7 +300,7 @@ class MadeTest extends munit.FunSuite:
     assert(result == tree)
   }
 
-  test("DerMirror for case class with wildcard") {
+  test("Made for case class with wildcard") {
     val _: Made.Product {
       type Type = Box[?]
       type Label = "Box"
@@ -418,6 +419,91 @@ class MadeTest extends munit.FunSuite:
     summon[fieldElem.Label =:= "customName"]
   }
 
+  test("Made exposes the companion object for a case class") {
+    val mirror: Made.Product {
+      type Type = SimpleCaseClass
+      type Companion = SimpleCaseClass.type
+    } = Made.derived[SimpleCaseClass]
+
+    assert(mirror.companion eq SimpleCaseClass)
+  }
+
+  test("Made exposes the companion object for a generic case class") {
+    val mirror: Made.Product {
+      type Type = Box[Int]
+      type Companion = Box.type
+    } = Made.derived[Box[Int]]
+
+    assert(mirror.companion eq Box)
+  }
+
+  test("Made exposes the companion object for an enum") {
+    val mirror: Made.Sum {
+      type Type = SimpleEnum
+      type Companion = SimpleEnum.type
+    } = Made.derived[SimpleEnum]
+
+    assert(mirror.companion eq SimpleEnum)
+  }
+
+  test("Made exposes the explicit companion object for a sealed trait") {
+    val mirror: Made.Sum {
+      type Type = MixedADT
+      type Companion = MixedADT.type
+    } = Made.derived[MixedADT]
+
+    assert(mirror.companion eq MixedADT)
+  }
+
+  test("Made exposes the companion object for a value class") {
+    val mirror: Made.Product {
+      type Type = ValueClass
+      type Companion = ValueClass.type
+    } = Made.derived[ValueClass]
+
+    assert(mirror.companion eq ValueClass)
+  }
+
+  test("Made exposes the companion object for a @transparent case class") {
+    val mirror: Made.Transparent {
+      type Type = TransparentClass
+      type Companion = TransparentClass.type
+    } = Made.derived[TransparentClass]
+
+    assert(mirror.companion eq TransparentClass)
+  }
+
+  test("Made companion is NotExists for a singleton object without its own companion") {
+    val mirror: Made.Singleton {
+      type Type = SimpleObject.type
+      type Companion = NotExists.type
+    } = Made.derived[SimpleObject.type]
+
+    assert(mirror.companion.notExists)
+    assert(!mirror.companion.exists)
+  }
+
+  test("Made companion is NotExists for Unit") {
+    val mirror: Made.Singleton {
+      type Type = Unit
+      type Companion = NotExists.type
+    } = Made.derived[Unit]
+
+    assert(mirror.companion.notExists)
+  }
+
+  test("Made.companion.exists is true when a companion is present") {
+    val mirror = Made.derived[SimpleCaseClass]
+
+    assert(mirror.companion.exists)
+    assert(!mirror.companion.notExists)
+  }
+
+  test("Made preserves the companion object's own type members") {
+    val mirror = Made.derived[HasCompanionObject]
+    summon[mirror.companion.AbstractType =:= String]
+  }
+
 sealed trait MixedADT
 sealed trait HKADT[F[_], T]
 case class SimpleCaseClass(id: Long, name: String)
@@ -472,3 +558,8 @@ case class HasParamAnnotatedGenerated(x: Int):
 case class HasMultipleGenerated(x: Int):
   @generated @Annotation1 def first: String = x.toString
   @generated @Annotation2 def second: Int = x * 2
+
+case class HasCompanionObject(x: Int)
+
+object HasCompanionObject:
+  type AbstractType = String

@@ -27,7 +27,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (x, y, z) = m.elems
 
-    assert(x.default == null)
+    assert(x.default == NotExists)
     assert(y.default == "hello")
     assert(z.default == true)
   }
@@ -76,7 +76,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (a, b) = m.elems
 
-    assert(a.default == null)
+    assert(a.default == NotExists)
     assert(b.default == "default")
   }
 
@@ -84,7 +84,7 @@ class MadeDefaultsTest extends munit.FunSuite:
     val m = Made.derived[WithDefaultGenerated]
 
     val y *: EmptyTuple = m.generatedElems
-    assert(y.default == null)
+    assert(y.default == NotExists)
   }
 
   test("@whenAbsent provides default") {
@@ -92,7 +92,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (x, y) = m.elems
 
-    assert(x.default == null)
+    assert(x.default == NotExists)
     assert(y.default == "absent")
   }
 
@@ -110,7 +110,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (a, b, c) = m.elems
 
-    assert(a.default == null)
+    assert(a.default == NotExists)
     assert(b.default == 99)
     assert(c.default == "scalaDefault")
   }
@@ -120,7 +120,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (value, next) = m.elems
 
-    assert(value.default == null)
+    assert(value.default == NotExists)
     assert(next.default == None)
   }
 
@@ -129,7 +129,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (value, next) = m.elems
 
-    assert(value.default == null)
+    assert(value.default == NotExists)
     assert(next.default == None)
   }
 
@@ -140,7 +140,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     assertEquals(x.default, None)
     assertEquals(y.default, null: String | Null)
-    assertEquals(z.default, null)
+    assertEquals(z.default, NotExists)
   }
 
   test("@optionalParam priority") {
@@ -161,7 +161,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (a, label) = m.elems
 
-    assert(a.default == null)
+    assert(a.default == NotExists)
     assert(label.default == "default")
   }
 
@@ -170,7 +170,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (a, b) = m.elems
 
-    assert(a.default == null)
+    assert(a.default == NotExists)
     assert(b.default == None)
   }
 
@@ -179,7 +179,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (a, b) = m.elems
 
-    assert(a.default == null)
+    assert(a.default == NotExists)
     assert(b.default == "annotated")
   }
 
