@@ -410,7 +410,9 @@ object Made:
       metaTypeOf(tSymbol),
       labelTypeOf(tSymbol, nameOf[T]),
       Expr.ofRefinedTuple(generatedElems.toList),
-      if tCompanion.isNoSymbol then '{ NotExists } else Ref(tCompanion).asExprOf[AnyRef],
+      // Ascribed to the precise singleton type: `exists`/`notExists` are `inline match`-based and
+      // need the scrutinee's static type to be exactly `NotExists.type`, not the broader sealed trait.
+      if tCompanion.isNoSymbol then '{ NotExists: NotExists.type } else Ref(tCompanion).asExprOf[AnyRef],
     ).runtimeChecked match
       case (
             '[type meta <: Tuple; meta],
@@ -431,14 +433,14 @@ object Made:
                   def generatedElems: GeneratedElems = $generatedElemsExpr
                   def value: s = singleValueOf[s]
 
-                  type Companion = NotExists
-                  val companion: NotExists = NotExists
+                  type Companion = NotExists.type
+                  val companion: NotExists.type = NotExists
                 .asInstanceOf[
                   Made.SingletonOf[T] {
                     type Label = label
                     type Metadata = meta
                     type GeneratedElems = generatedElems
-                    type Companion = NotExists
+                    type Companion = NotExists.type
                   },
                 ]
               }
@@ -453,14 +455,14 @@ object Made:
                   def generatedElems: GeneratedElems = $generatedElemsExpr
                   def value: Unit = ()
 
-                  type Companion = NotExists
-                  val companion: NotExists = NotExists
+                  type Companion = NotExists.type
+                  val companion: NotExists.type = NotExists
                 .asInstanceOf[
                   Made.SingletonOf[T] {
                     type Label = label
                     type Metadata = meta
                     type GeneratedElems = generatedElems
-                    type Companion = NotExists
+                    type Companion = NotExists.type
                   },
                 ]
               }
@@ -740,8 +742,9 @@ object Made:
           case x => report.errorAndAbort(s"Unexpected Mirror type: ${x.show}")
         }
 
-        deriveSingleton orElse deriveTransparent orElse deriveValueClass orElse deriveProduct orElse deriveSum getOrElse:
-          report.errorAndAbort(s"Unsupported Mirror type for ${tTpe.show}")
+        deriveSingleton orElse deriveTransparent orElse deriveValueClass orElse deriveProduct orElse
+          deriveSum getOrElse:
+            report.errorAndAbort(s"Unsupported Mirror type for ${tTpe.show}")
   // $COVERAGE-ON$
 
   /**

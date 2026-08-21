@@ -476,7 +476,7 @@ class MadeTest extends munit.FunSuite:
   test("Made companion is NotExists for a singleton object without its own companion") {
     val mirror: Made.Singleton {
       type Type = SimpleObject.type
-      type Companion = NotExists
+      type Companion = NotExists.type
     } = Made.derived[SimpleObject.type]
 
     assert(mirror.companion.notExists)
@@ -486,7 +486,7 @@ class MadeTest extends munit.FunSuite:
   test("Made companion is NotExists for Unit") {
     val mirror: Made.Singleton {
       type Type = Unit
-      type Companion = NotExists
+      type Companion = NotExists.type
     } = Made.derived[Unit]
 
     assert(mirror.companion.notExists)
