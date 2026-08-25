@@ -27,6 +27,13 @@ jobs:
           fetch-depth: 0
       - name: Setup coursier cache
         uses: coursier/cache-action@v8.1
+      - name: Cache scala-cli/Bloop incremental build
+        uses: actions/cache@v4
+        with:
+          path: .scala-build
+          key: scala-build-jvm-${{ hashFiles('project.scala', '**/*.scala') }}
+          restore-keys: |
+            scala-build-jvm-
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Run tests
         # Coverage is recorded only for production sources; tests were previously
@@ -59,6 +66,13 @@ jobs:
       - uses: actions/checkout@v7
       - name: Setup coursier cache
         uses: coursier/cache-action@v8.1
+      - name: Cache scala-cli/Bloop incremental build
+        uses: actions/cache@v4
+        with:
+          path: .scala-build
+          key: scala-build-${{ matrix.platform }}-${{ hashFiles('project.scala', '**/*.scala') }}
+          restore-keys: |
+            scala-build-${{ matrix.platform }}-
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Compile
         run: scala-cli --power compile . --platform ${{ matrix.platform }} ${{ matrix.args }}
@@ -80,6 +94,13 @@ jobs:
       - uses: actions/checkout@v7
       - name: Setup coursier cache
         uses: coursier/cache-action@v8.1
+      - name: Cache scala-cli/Bloop incremental build
+        uses: actions/cache@v4
+        with:
+          path: .scala-build
+          key: scala-build-${{ matrix.platform }}-${{ hashFiles('project.scala', '**/*.scala') }}
+          restore-keys: |
+            scala-build-${{ matrix.platform }}-
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Run tests
         run: scala-cli --power test . --platform ${{ matrix.platform }} ${{ matrix.args }}
