@@ -28,7 +28,7 @@ jobs:
       - name: Setup coursier cache
         uses: coursier/cache-action@v8.1
       - name: Cache scala-cli/Bloop incremental build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .scala-build
           key: scala-build-jvm-${{ hashFiles('project.scala', '**/*.scala') }}
@@ -67,7 +67,7 @@ jobs:
       - name: Setup coursier cache
         uses: coursier/cache-action@v8.1
       - name: Cache scala-cli/Bloop incremental build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .scala-build
           key: scala-build-${{ matrix.platform }}-${{ hashFiles('project.scala', '**/*.scala') }}
@@ -95,7 +95,7 @@ jobs:
       - name: Setup coursier cache
         uses: coursier/cache-action@v8.1
       - name: Cache scala-cli/Bloop incremental build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .scala-build
           key: scala-build-${{ matrix.platform }}-${{ hashFiles('project.scala', '**/*.scala') }}
