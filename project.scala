@@ -1,4 +1,4 @@
-//> using scala 3.9.0-RC6
+//> using scala 3.9.0
 
 //> using dep com.halotukozak::commons::0.1.1
 
