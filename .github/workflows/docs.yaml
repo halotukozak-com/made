@@ -32,14 +32,20 @@ jobs:
       - name: Setup scala-cli
         uses: VirtusLab/scala-cli-setup@v1
       - name: Generate documentation
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+          # Override with a repo variable (Settings > Secrets and variables >
+          # Actions > Variables > PROJECT_NAME) when the displayed project
+          # name should differ from the repo slug, e.g. made -> "M&DE".
+          PROJECT_NAME: ${{ vars.PROJECT_NAME || github.event.repository.name }}
         run: |
           scala-cli --power doc . -- \
-          -project "M&DE" \
+          -project "$PROJECT_NAME" \
           -project-version ${{ github.ref_name }} \
           -project-footer "made with ❤️ and coffee" \
-          -social-links:github::https://github.com/halotukozak/made \
+          -social-links:github::https://github.com/halotukozak/$REPO_NAME \
           -snippet-compiler:compile \
-          -source-links:"src=github://halotukozak/made?tag=${{ github.ref_name }}" \
+          -source-links:"src=github://halotukozak/$REPO_NAME?tag=${{ github.ref_name }}" \
           -revision:${{ github.ref_name }}
       - name: Inject Umami analytics
         run: |
