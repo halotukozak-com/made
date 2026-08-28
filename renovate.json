@@ -18,37 +18,76 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Scala cross-built deps (scala-cli :: / sbt %%) in project.scala and README",
-      "managerFilePatterns": ["/(^|/)project\\.scala$/", "/(^|/)README\\.md$/"],
+      "description": "Scala cross-built deps: scala-cli `::`, sbt `%%`, Mill `mvn\"...::...\"`",
+      "managerFilePatterns": [
+        "/(^|/)project\\.scala$/",
+        "/(^|/)README\\.md$/",
+        "/(^|/)build\\.sc$/",
+        "/(^|/)build\\.mill$/",
+        "/\\.mill$/"
+      ],
       "matchStrings": [
-        "//> using (?:test\\.)?dep (?<groupId>[\\w.-]+)::(?<artifactId>[\\w.-]+):{1,2}(?<currentValue>[\\w.-]+)",
-        "\"(?<groupId>[\\w.-]+)\" %% \"(?<artifactId>[\\w.-]+)\" % \"(?<currentValue>[\\w.-]+)\""
+        "//> using (?:test\\.)?dep \"?(?<groupId>[\\w.-]+)::(?<artifactId>[\\w.-]+):{1,2}(?<currentValue>[\\w.-]+)\"?",
+        "\"(?<groupId>[\\w.-]+)\" %% \"(?<artifactId>[\\w.-]+)\" % \"(?<currentValue>[\\w.-]+)\"",
+        "mvn\"(?<groupId>[\\w.-]+)::(?<artifactId>[\\w.-]+):(?<currentValue>[\\w.-]+)\""
       ],
       "packageNameTemplate": "{{groupId}}:{{artifactId}}_3",
       "datasourceTemplate": "sbt-package"
     },
     {
       "customType": "regex",
-      "description": "Plain Maven-coordinate deps (scala-cli : / sbt %) in project.scala and README",
-      "managerFilePatterns": ["/(^|/)project\\.scala$/", "/(^|/)README\\.md$/"],
+      "description": "Plain Maven-coordinate deps: scala-cli `:`, sbt `%`, Mill `mvn\"...:...\"`",
+      "managerFilePatterns": [
+        "/(^|/)project\\.scala$/",
+        "/(^|/)README\\.md$/",
+        "/(^|/)build\\.sc$/",
+        "/(^|/)build\\.mill$/",
+        "/\\.mill$/"
+      ],
       "matchStrings": [
-        "//> using (?:test\\.)?dep (?<groupId>[\\w.-]+):(?<artifactId>[\\w.-]+):(?<currentValue>[\\w.-]+)",
-        "\"(?<groupId>[\\w.-]+)\" % \"(?<artifactId>[\\w.-]+)\" % \"(?<currentValue>[\\w.-]+)\""
+        "//> using (?:test\\.)?dep \"?(?<groupId>[\\w.-]+):(?<artifactId>[\\w.-]+):(?<currentValue>[\\w.-]+)\"?",
+        "\"(?<groupId>[\\w.-]+)\" % \"(?<artifactId>[\\w.-]+)\" % \"(?<currentValue>[\\w.-]+)\"",
+        "mvn\"(?<groupId>[\\w.-]+):(?<artifactId>[\\w.-]+):(?<currentValue>[\\w.-]+)\""
       ],
       "packageNameTemplate": "{{groupId}}:{{artifactId}}",
       "datasourceTemplate": "maven"
     },
     {
       "customType": "regex",
-      "description": "scala-cli Scala compiler version in project.scala",
-      "managerFilePatterns": ["/(^|/)project\\.scala$/"],
+      "description": "Scala language version: scala-cli `using scala`, Mill `def scalaVersion`",
+      "managerFilePatterns": [
+        "/(^|/)project\\.scala$/",
+        "/(^|/)README\\.md$/",
+        "/(^|/)build\\.sc$/",
+        "/(^|/)build\\.mill$/",
+        "/\\.mill$/"
+      ],
       "matchStrings": [
-        "//> using scala (?<currentValue>[\\w.-]+)"
+        "//> using scala \"?(?<currentValue>[\\w.-]+)\"?",
+        "def scalaVersion\\s*=\\s*\"(?<currentValue>[\\w.-]+)\""
       ],
       "depNameTemplate": "scala3",
       "packageNameTemplate": "scala/scala3",
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Scala Native version: scala-cli --native-version, Mill `def scalaNativeVersion`",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/[^/]+\\.ya?ml$/",
+        "/(^|/)build\\.sc$/",
+        "/(^|/)build\\.mill$/",
+        "/\\.mill$/"
+      ],
+      "matchStrings": [
+        "--native-version (?<currentValue>[\\w.-]+)",
+        "def scalaNativeVersion\\s*=\\s*\"(?<currentValue>[\\w.-]+)\""
+      ],
+      "depNameTemplate": "scala-native",
+      "packageNameTemplate": "scala-native/scala-native",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
     },
     {
       "customType": "regex",
@@ -64,15 +103,38 @@
     },
     {
       "customType": "regex",
-      "description": "scala-cli --native-version in GitHub workflows",
-      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
-      "matchStrings": [
-        "--native-version (?<currentValue>[\\w.-]+)"
+      "description": "Mill version (//| mill-version pragma)",
+      "managerFilePatterns": [
+        "/(^|/)README\\.md$/",
+        "/(^|/)build\\.sc$/",
+        "/(^|/)build\\.mill$/",
+        "/\\.mill$/"
       ],
-      "depNameTemplate": "scala-native",
-      "packageNameTemplate": "scala-native/scala-native",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.+)$"
+      "matchStrings": [
+        "//\\|\\s*mill-version:\\s*(?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "com-lihaoyi/mill",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "scoverage version (Mill scoverageVersion)",
+      "managerFilePatterns": ["/(^|/)build\\.sc$/", "/(^|/)build\\.mill$/", "/\\.mill$/"],
+      "matchStrings": [
+        "def scoverageVersion\\s*=\\s*\"(?<currentValue>[\\w.-]+)\""
+      ],
+      "depNameTemplate": "scoverage/scalac-scoverage-plugin",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "scalatest version (Mill scalaTestVersion)",
+      "managerFilePatterns": ["/(^|/)build\\.sc$/", "/(^|/)build\\.mill$/", "/\\.mill$/"],
+      "matchStrings": [
+        "def scalaTestVersion\\s*=\\s*\"(?<currentValue>[\\w.-]+)\""
+      ],
+      "depNameTemplate": "org.scalatest:scalatest",
+      "datasourceTemplate": "maven"
     }
   ]
 }
