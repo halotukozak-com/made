@@ -3,24 +3,39 @@
   "extends": [
     "config:recommended"
   ],
+  "packageRules": [
+    {
+      "description": "Toolchain deps: only final X.Y.Z releases (no RC/M/nightly/-bin-)",
+      "matchDepNames": [
+        "scala3",
+        "org.scala-lang:scala3-compiler_3",
+        "scala-js",
+        "scala-native"
+      ],
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/"
+    }
+  ],
   "customManagers": [
     {
       "customType": "regex",
-      "description": "scala-cli cross-built deps (::) in project.scala",
-      "managerFilePatterns": ["/(^|/)project\\.scala$/"],
+      "description": "Scala cross-built deps (scala-cli :: / sbt %%) in project.scala and README",
+      "managerFilePatterns": ["/(^|/)project\\.scala$/", "/(^|/)README\\.md$/"],
       "matchStrings": [
-        "//> using (?:test\\.)?dep (?<groupId>[\\w.-]+)::(?<artifactId>[\\w.-]+):{1,2}(?<currentValue>[\\w.-]+)"
+        "//> using (?:test\\.)?dep (?<groupId>[\\w.-]+)::(?<artifactId>[\\w.-]+):{1,2}(?<currentValue>[\\w.-]+)",
+        "\"(?<groupId>[\\w.-]+)\" %% \"(?<artifactId>[\\w.-]+)\" % \"(?<currentValue>[\\w.-]+)\""
       ],
       "packageNameTemplate": "{{groupId}}:{{artifactId}}_3",
       "datasourceTemplate": "sbt-package"
     },
     {
       "customType": "regex",
-      "description": "scala-cli plain maven-coordinate deps in project.scala",
-      "managerFilePatterns": ["/(^|/)project\\.scala$/"],
+      "description": "Plain Maven-coordinate deps (scala-cli : / sbt %) in project.scala and README",
+      "managerFilePatterns": ["/(^|/)project\\.scala$/", "/(^|/)README\\.md$/"],
       "matchStrings": [
-        "//> using (?:test\\.)?dep (?<packageName>[\\w.-]+:[\\w.-]+):(?<currentValue>[\\w.-]+)"
+        "//> using (?:test\\.)?dep (?<groupId>[\\w.-]+):(?<artifactId>[\\w.-]+):(?<currentValue>[\\w.-]+)",
+        "\"(?<groupId>[\\w.-]+)\" % \"(?<artifactId>[\\w.-]+)\" % \"(?<currentValue>[\\w.-]+)\""
       ],
+      "packageNameTemplate": "{{groupId}}:{{artifactId}}",
       "datasourceTemplate": "maven"
     },
     {
@@ -34,6 +49,30 @@
       "packageNameTemplate": "scala/scala3",
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "scala-cli --js-version in GitHub workflows",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "--js-version (?<currentValue>[\\w.-]+)"
+      ],
+      "depNameTemplate": "scala-js",
+      "packageNameTemplate": "scala-js/scala-js",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "scala-cli --native-version in GitHub workflows",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "--native-version (?<currentValue>[\\w.-]+)"
+      ],
+      "depNameTemplate": "scala-native",
+      "packageNameTemplate": "scala-native/scala-native",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
     }
   ]
 }
