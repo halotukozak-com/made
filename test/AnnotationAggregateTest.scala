@@ -28,7 +28,7 @@ class AnnotationAggregateTest extends munit.FunSuite:
   test("getAnnotation retrieves inner annotation instance from aggregate") {
     val mirror = Made.derived[AggregateWithMeta]
     val x *: EmptyTuple = mirror.elems
-    assert(x.getAnnotation[InnerMeta] != null)
+    assert(x.getAnnotation[InnerMeta] != NotExists)
   }
 
 class mongoId extends AnnotationAggregate:

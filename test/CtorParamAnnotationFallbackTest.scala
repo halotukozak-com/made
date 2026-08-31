@@ -27,7 +27,7 @@ class CtorParamAnnotationFallbackTest extends munit.FunSuite:
     val mirror = Made.derived[ParamOnlyTagged]
     val x *: y *: EmptyTuple = mirror.elems
     assertEquals(x.getAnnotation[ParamOnlyTag].value, "primary")
-    assertEquals(y.getAnnotation[ParamOnlyTag], null)
+    assertEquals(y.getAnnotation[ParamOnlyTag], NotExists)
   }
 
   test("default-targeted annotation still works (sanity-check, not affected by fallback)") {
@@ -41,7 +41,7 @@ class CtorParamAnnotationFallbackTest extends munit.FunSuite:
     val mirror = Made.derived[NormalAnnotated]
     val x *: _ *: EmptyTuple = mirror.elems
     val annot = x.getAnnotation[NormalMarker]
-    assert(annot != null)
+    assert(annot != NotExists)
     // Sanity: no doubled metadata. We can't directly inspect the Metadata tuple's
     // arity at runtime but the type-level singleton narrowing guards us.
     val flags: (true, false) = mirror.elems.hasAnnotations[NormalMarker]

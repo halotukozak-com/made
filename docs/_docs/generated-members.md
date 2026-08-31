@@ -67,8 +67,9 @@ chain (which always includes `@generated` since the annotation itself extends `M
 to obtain the value of a generated member through the mirror. You call `apply` with an instance of the declaring type,
 and it returns the computed result.
 
-The `default` method inherited from `MadeFieldElem` always returns `null` for generated members. Generated members are
-not constructor parameters and have no defaults. The value is always computed via `apply`, never via `default`.
+The `default` method inherited from `MadeFieldElem` always returns `NotExists` for generated members. Generated
+members are not constructor parameters and have no defaults. The value is always computed via `apply`, never via
+`default`.
 
 The companion object provides two type aliases: `GeneratedMadeElem.Of[T]` refines `Type` to `T`, and
 `GeneratedMadeElem.OuterOf[Outer]` refines `OuterType` to `Outer`.
@@ -90,12 +91,12 @@ val gAb *: gLen *: EmptyTuple = mirror.generatedElems
 val p = Prod(2, "x")
 assert(gAb(p) == "2-x")
 assert(gLen(p) == 1)
-assert(gAb.default == null)
-assert(gLen.default == null)
+assert(gAb.default == NotExists)
+assert(gLen.default == NotExists)
 ```
 
-Calling `gAb(p)` invokes the generated def `ab` on `p`, producing `"2-x"`. Calling `gAb.default` returns `null` because
-generated members have no constructor defaults.
+Calling `gAb(p)` invokes the generated def `ab` on `p`, producing `"2-x"`. Calling `gAb.default` returns `NotExists`
+because generated members have no constructor defaults.
 
 ## Supported Mirror Types
 
