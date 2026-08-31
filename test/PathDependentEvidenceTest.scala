@@ -77,9 +77,9 @@ class PathDependentEvidenceTest extends munit.FunSuite:
 
   test("Done: operations.getAnnotations works via structural Metadata") {
     val d = Done.derived[PSvc]
-    val opts: (PMarker, Null) = d.operations.getAnnotations[PMarker]
+    val opts: (PMarker, NotExists.type) = d.operations.getAnnotations[PMarker]
     assert(opts._1.isInstanceOf[PMarker])
-    assertEquals(opts._2, null)
+    assertEquals(opts._2, NotExists)
   }
 
   test("hasAnnotations works on arbitrary tuple of refined types with Metadata member") {
@@ -100,10 +100,10 @@ class PathDependentEvidenceTest extends munit.FunSuite:
 
     val tup = (a, b, c)
     val flags: (true, false, true) = tup.hasAnnotations[PMarker]
-    val opts: (PMarker, Null, PMarker) = tup.getAnnotations[PMarker]
+    val opts: (PMarker, NotExists.type, PMarker) = tup.getAnnotations[PMarker]
     assertEquals(flags, (true, false, true))
     assert(opts._1.isInstanceOf[PMarker])
-    assertEquals(opts._2, null)
+    assertEquals(opts._2, NotExists)
     assert(opts._3.isInstanceOf[PMarker])
   }
 

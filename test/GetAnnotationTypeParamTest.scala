@@ -15,11 +15,11 @@ import scala.compiletime.testing.typeCheckErrors
  *   - When the found annotation's type is a subtype of the requested `A`, `transparent inline`
  *     narrows the result to the annotation's *actual* precise type, not to `A` as written —
  *     exactly like it already does for parameter-less annotations (see
- *     [[halotukozak.made.FieldAnnotationTest]]'s "narrows to the annotation type or Null" tests).
+ *     [[halotukozak.made.FieldAnnotationTest]]'s "narrows to the annotation type or NotExists" tests).
  *   - Because `Name` is invariant here, that subtype check only succeeds if `A`'s type argument
  *     matches exactly (or the argument is a wildcard). Querying with a *widened* argument acts as
  *     asking for a different, unrelated type: the annotation isn't found and `getAnnotation`
- *     narrows to `Null`. A covariant type parameter does not have this restriction.
+ *     narrows to `NotExists`. A covariant type parameter does not have this restriction.
  */
 class GetAnnotationTypeParamTest extends munit.FunSuite:
 
@@ -44,20 +44,20 @@ class GetAnnotationTypeParamTest extends munit.FunSuite:
     val mirror = Made.derived[Annotated]
     // Annot["foo"] is not a subtype of the invariant Annot[String], so the lookup's
     // `annot.tpe <:< TypeRepr.of[A]` check fails and the annotation is reported as absent.
-    val a: Null = mirror.getAnnotation[Annot[String]]
-    assertEquals(a, null)
+    val a: NotExists.type = mirror.getAnnotation[Annot[String]]
+    assertEquals(a, NotExists)
   }
 
   test("invariant type parameter: querying with a mismatched literal does not find the annotation") {
     val mirror = Made.derived[Annotated]
-    val a: Null = mirror.getAnnotation[Annot["bar"]]
-    assertEquals(a, null)
+    val a: NotExists.type = mirror.getAnnotation[Annot["bar"]]
+    assertEquals(a, NotExists)
   }
 
   test("invariant type parameter: a wildcard type argument finds the annotation and keeps its precise type") {
     val mirror = Made.derived[Annotated]
     val a = mirror.getAnnotation[Annot[?]]
-    assert(a != null)
+    assert(a != NotExists)
     assertEquals(a.name, "foo")
     assertEquals(a.name: "foo", "foo") // still narrowed to the literal, despite the `?` in the query
   }

@@ -37,13 +37,13 @@ name.getAnnotation[JsonName].value                 // "user_name"
 
 `hasAnnotation` and `getAnnotation` are `transparent inline` macros — they resolve against the type-level `Metadata`
 tuple, so the result type is precise and the call has no reflective cost at runtime. `getAnnotation[A]` returns
-`A | Null`: when the macro can already tell the annotation is present (as above, since `User` and its `name` field
-are annotated literally), the result narrows all the way to `A` and `.value` is available directly, with no
+`A | NotExists`: when the macro can already tell the annotation is present (as above, since `User` and its `name`
+field are annotated literally), the result narrows all the way to `A` and `.value` is available directly, with no
 `.get`/`.map` unwrapping.
 
 When presence isn't known until the call site sees a concrete field — e.g. inside code that's generic over which
-element it's looking at — the result narrows to `A | Null` instead, and a plain `!= null` check flow-types it back
-to `A`:
+element it's looking at — the result narrows to `A | NotExists` instead, and a match against `NotExists` (or the
+`.exists` / `.notExists` extension) recovers `A`:
 
 ```scala
 import halotukozak.made.*
@@ -55,13 +55,15 @@ case class User(@JsonName("user_name") name: String)
 
 val name *: EmptyTuple = Made.derived[User].elems
 
-val annot: JsonName | Null = name.getAnnotation[JsonName]
-if annot != null then annot.value else "unnamed"      // "user_name" — no Option, no .get
+val annot: JsonName | NotExists = name.getAnnotation[JsonName]
+annot match
+  case NotExists => "unnamed"
+  case a: JsonName => a.value                          // "user_name" — no Option, no .get
 ```
 
-This mirrors `made.Default`'s existing `A | Null` convention for "optional" values rather than introducing a second
-shape alongside `Option`. `getAllAnnotations[A]`, which collects every annotation of type `A` on an element, stays
-`List[A]`, since a list already has a natural empty case.
+`NotExists` is Made's single "not present" marker — the same one `MadeFieldElem.default` uses for an absent
+default — rather than a second shape alongside `Option` or a bare `null`. `getAllAnnotations[A]`, which collects
+every annotation of type `A` on an element, stays `List[A]`, since a list already has a natural empty case.
 
 ## Defining Custom Annotations
 
@@ -162,7 +164,7 @@ case class Carried(@withMeta x: Int)
 val m = Made.derived[Carried]
 val x *: EmptyTuple = m.elems
 x.hasAnnotation[InnerMeta]                         // true
-x.getAnnotation[InnerMeta] != null                 // true
+x.getAnnotation[InnerMeta] != NotExists            // true
 ```
 
 ### Constraints
