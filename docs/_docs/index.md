@@ -24,22 +24,22 @@ M&DE is published to Maven Central under `com.halotukozak`. Requires Scala 3.
 ### scala-cli
 
 ```scala
-//> using scala 3.9.0-RC4
+//> using scala 3.9.0
 //> using dep com.halotukozak::made::0.4.1
 ```
 
 ### sbt
 
 ```scala
-scalaVersion := "3.9.0-RC4"
+scalaVersion := "3.9.0"
 libraryDependencies += "com.halotukozak" %% "made" % "0.4.1"
 ```
 
 ### mill
 
 ```scala
-def scalaVersion = "3.9.0-RC4"
-def mvDeps = Seq(mvn"com.halotukozak::made::0.1.0")
+def scalaVersion = "3.9.0"
+def mvnDeps = Seq(mvn"com.halotukozak::made::0.4.1")
 ```
 
 ## Quickstart
