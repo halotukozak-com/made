@@ -62,7 +62,7 @@ val mirror = Made.derived[User]
 // Runtime
 val (nameElem, ageElem) = mirror.elems
 nameElem.label  // "user_name"
-ageElem.default // Some(18)
+ageElem.default // 18 (NotExists if the field had none)
 
 // Build values
 val u = mirror.fromUnsafeArray(Array("Alice", 30))
