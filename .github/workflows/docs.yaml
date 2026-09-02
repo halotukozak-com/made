@@ -47,6 +47,21 @@ jobs:
           -snippet-compiler:compile \
           -source-links:"src=github://halotukozak/$REPO_NAME?tag=${{ github.ref_name }}" \
           -revision:${{ github.ref_name }}
+
+      # Scala 3.9.x's bundled scaladoc emits a ux.js that still calls jQuery's
+      # `$.get` for SPA-style same-page navigation (sidebar/TOC link clicks) but
+      # no longer loads jQuery, so every in-page link click throws
+      # "ReferenceError: $ is not defined" right after the handler has already
+      # called preventDefault(), and navigation silently breaks on the deployed
+      # site. Fixed upstream in scala/scala3#26664 + scala/scala3#22014 (first
+      # released in 3.10.0-RC1). Until these repos build on scaladoc >= 3.10.0,
+      # swap the jQuery call for an equivalent native fetch(); the sed is a
+      # no-op once the generated ux.js no longer contains the pattern.
+      - name: Patch scaladoc jQuery navigation bug
+        run: |
+          sed -i 's/\$\.get(href, function (data) {/fetch(href).then((r) => r.text()).then(function (data) {/' \
+            scala-doc/scripts/ux.js
+
       - name: Inject Umami analytics
         run: |
           find scala-doc -name '*.html' -exec sed -i \
