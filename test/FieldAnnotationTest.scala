@@ -198,6 +198,32 @@ class FieldAnnotationTest extends munit.FunSuite:
     assertEquals(flags, EmptyTuple)
   }
 
+  test("hasAnnotationsByType returns one per-element column per annotation type") {
+    val each: ((true, false, true), (false, false, false)) =
+      Made.derived[AnnotatedFields].elems.hasAnnotationsByType[(Marker, Tag)]
+    assertEquals(each._1, (true, false, true))
+    assertEquals(each._2, (false, false, false))
+  }
+
+  test("hasAnnotationsByType on a field carrying both annotations") {
+    val each: (Tuple1[true], Tuple1[true]) =
+      Made.derived[MultiAnnotatedField].elems.hasAnnotationsByType[(Marker, Tag)]
+    assertEquals(each._1, Tuple1(true))
+    assertEquals(each._2, Tuple1(true))
+  }
+
+  test("hasAnnotationsByType on EmptyTuple") {
+    val each: (EmptyTuple, EmptyTuple) = EmptyTuple.hasAnnotationsByType[(Marker, Tag)]
+    assertEquals(each, (EmptyTuple, EmptyTuple))
+  }
+
+  test("hasAnnotationsByType rejects a tuple entry that is not an annotation") {
+    val errors = typeCheckErrors("""
+      Made.derived[AnnotatedFields].elems.hasAnnotationsByType[(Marker, String)]
+    """)
+    assert(errors.nonEmpty)
+  }
+
 // --- Fixtures ---
 
 class Marker extends MetaAnnotation
