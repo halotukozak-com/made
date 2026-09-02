@@ -57,6 +57,15 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
     ${ hasAnnotationsImpl[es.type, A] }
 
   /**
+   * One pass over `es` producing a column per annotation type in `As`:
+   * `(flagsFor0, flagsFor1, …)`, each a per-element `Boolean` tuple. Same result as calling
+   * [[hasAnnotations]] once per entry of `As`, but walks `es` a single time.
+   */
+  transparent inline def hasAnnotationsByType[As <: Tuple: Of[Annotation]]
+    : Tuple.Map[As, [_] =>> Tuple.Map[es.type, [_] =>> Boolean]] =
+    ${ hasAnnotationsByTypeImpl[es.type, As] }
+
+  /**
    * Per-element [[getAnnotation]] over a tuple whose entries each declare a `Metadata` type member.
    * Each result slot narrows independently to the annotation type or to `NotExists.type`, never to
    * a common `A | NotExists`.
@@ -97,6 +106,18 @@ private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using qu
     traverseTupleType(Type.of[Es]).map:
       case '[type m <: Tuple; { type Metadata = m }] => hasAnnotationImpl[A, m]
   .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> Boolean]]]
+
+@publicInBinary private def hasAnnotationsByTypeImpl[Es <: Tuple: Type, As <: Tuple: Type](using Quotes)
+  : Expr[Tuple.Map[As, [_] =>> Tuple.Map[Es, [_] =>> Boolean]]] =
+  val elems = traverseTupleType(Type.of[Es])
+  Expr
+    .ofRefinedTuple:
+      traverseTupleType(Type.of[As]).map:
+        case '[type a <: Annotation; a] =>
+          Expr.ofRefinedTuple:
+            elems.map:
+              case '[type m <: Tuple; { type Metadata = m }] => hasAnnotationImpl[a, m]
+    .asInstanceOf[Expr[Tuple.Map[As, [_] =>> Tuple.Map[Es, [_] =>> Boolean]]]]
 
 @publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
   : Expr[Tuple.Map[Es, [_] =>> A | NotExists]] = Expr
