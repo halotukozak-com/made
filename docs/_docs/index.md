@@ -25,14 +25,14 @@ M&DE is published to Maven Central under `com.halotukozak`. Requires Scala 3.
 
 ```scala
 //> using scala 3.9.0
-//> using dep com.halotukozak::made::0.4.1
+//> using dep com.halotukozak::made::0.5.1
 ```
 
 ### sbt
 
 ```scala
 scalaVersion := "3.9.0"
-libraryDependencies += "com.halotukozak" %% "made" % "0.4.1"
+libraryDependencies += "com.halotukozak" %% "made" % "0.5.1"
 ```
 
 ### mill
