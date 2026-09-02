@@ -1,6 +1,6 @@
 //> using scala 3.9.0
 
-//> using dep com.halotukozak::commons::0.1.2
+//> using dep com.halotukozak::commons::0.1.3
 
 //> using test.dep org.scalameta::munit::1.3.5
 //> using test.dep org.scala-lang::scala3-compiler:3.9.0
