@@ -45,15 +45,15 @@ jobs:
           org=$(grep -oP '(?<=using publish.organization ).*' project.scala | tr -d '"')
           name=$(grep -oP '(?<=using publish.name ).*' project.scala | tr -d '"')
 
-          scala-cli --power package . --library -o "$RUNNER_TEMP/new.jar" --force
-          shared_cp=$(scala-cli --power compile . --print-class-path | tail -1)
+          scala-cli --power package . --exclude benchmark --library -o "$RUNNER_TEMP/new.jar" --force
+          shared_cp=$(scala-cli --power compile . --exclude benchmark --print-class-path | tail -1)
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             base_sha=$(git rev-parse HEAD^1)
             baseline_label="main@${base_sha:0:7}"
             echo "Baseline: $baseline_label (does this PR itself introduce a new binary incompatibility?)"
             git worktree add --detach --quiet "$RUNNER_TEMP/old-src" "$base_sha"
-            scala-cli --power package "$RUNNER_TEMP/old-src" --library -o "$RUNNER_TEMP/old.jar" --force
+            scala-cli --power package "$RUNNER_TEMP/old-src" --exclude benchmark --library -o "$RUNNER_TEMP/old.jar" --force
             old_jar="$RUNNER_TEMP/old.jar"
           else
             base_tag=$(git tag -l 'v*' --sort=-v:refname | head -1)
