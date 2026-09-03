@@ -2,17 +2,18 @@
 
 //> using dep com.halotukozak::commons::0.1.3
 
-//> using test.dep org.scalameta::munit::1.3.5
+//> using test.dep org.scalameta::munit::1.3.6
 //> using test.dep org.scala-lang::scala3-compiler:3.9.0
 
 //> using options -deprecation -feature -new-syntax -unchecked
 //> using options -language:noAutoTupling
 //> using options -Vprofile -Xprint-inline
-//> using options -Ycheck:macros -Ydebug-flags -Ydebug-missing-refs
+//> using options -Xcheck-macros -Ycheck:macros -Ydebug-flags -Ydebug-missing-refs
 //> using options -Ycheck:all
 //> using options -Yexplain-lowlevel -Yexplicit-nulls
 //> using options -Yshow-suppressed-errors -Yshow-var-bounds
 //> using options -Wsafe-init -Werror -Wunused:all
+//> using options "-Wconf:msg=Missing symbol position.*:s"
 ////> using options -Yprofile-enabled" -Yprofile-trace:debug/compile-trace.json"
 
 //> using publish.organization com.halotukozak

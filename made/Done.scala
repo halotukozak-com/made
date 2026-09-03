@@ -56,10 +56,10 @@ sealed trait Done:
   def operations: Operations
 
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
 
   /** Path-dependent evidence that [[Operations]] is a tuple of [[DoneOperation]]s. */
-  given Operations containsOnly DoneOperation = containsOnly.refl
+  inline given Operations containsOnly DoneOperation = containsOnly.refl
 
 /**
  * Element representing a single operation (field or method) in a [[Done]] mirror.
@@ -102,10 +102,10 @@ sealed trait DoneOperation:
   def inputElems: InputElems
 
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
 
   /** Path-dependent evidence that [[InputElems]] is a tuple of [[InputElem]]s. */
-  given InputElems containsOnly InputElem = containsOnly.refl
+  inline given InputElems containsOnly InputElem = containsOnly.refl
 
   /** The enclosing type that declares this operation — equals [[Done.Type]] of the parent [[Done]] mirror. */
   type OuterType
@@ -182,7 +182,8 @@ sealed trait InputElem:
   type Metadata <: Tuple
 
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
+
 
 object InputElem:
   type Of[T] = InputElem { type Type = T }
@@ -236,11 +237,14 @@ object Done:
    */
   transparent inline given derived[T]: Done.Of[T] = ${ derivedImpl[T] }
 
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait DoneOperationWorkaround[Outer, Out] extends DoneOperation:
+    final type OuterType = Outer
+    final type OutputType = Out
+
   // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] =
     import quotes.reflect.*
-    val utils = new MacroUtils[quotes.type]
-    import utils.*
 
     val tTpe = TypeRepr.of[T]
     val tSymbol = tTpe.typeSymbol
@@ -266,6 +270,7 @@ object Done:
       memberTpe: TypeRepr,
       outer: Expr[T],
       args: Expr[Tuple],
+    )(using Quotes,
     ): Expr[Out] =
       def go(tpe: TypeRepr, idx: Int): List[List[Term]] = tpe match
         case MethodType(_, paramTypes, result) =>
@@ -327,7 +332,7 @@ object Done:
           labelTypeOf(member, member.name),
           metaTypeOf(member),
           outputTpe,
-          Expr.ofRefinedTuple(inputElems),
+          Expr.ofRefinedTupleFixed(inputElems),
           paramListsType,
         ).runtimeChecked match
           case (
@@ -391,7 +396,7 @@ object Done:
     (
       labelTypeOf(tSymbol, nameOf[T]),
       metaTypeOf(tSymbol),
-      Expr.ofRefinedTuple(operations),
+      Expr.ofRefinedTupleFixed(operations),
     ).runtimeChecked match
       case (
             '[type label <: String; label],
@@ -399,13 +404,19 @@ object Done:
             '{ type operations <: Tuple; $operationsExpr: operations },
           ) =>
         '{
-          new Done:
-            override type Type = T
+          new DoneWorkaround[T]:
             override type Label = label
             override type Metadata = meta
             override type Operations = operations
 
             override val operations: Operations = $operationsExpr
+          .asInstanceOf[
+            Done.Of[T] {
+              type Label = label
+              type Metadata = meta
+              type Operations = operations
+            },
+          ]
         }
 // $COVERAGE-ON$
 
@@ -421,7 +432,7 @@ object ValidHandlers:
 
   def refl[Ops <: Tuple, Handlers <: Tuple]: ValidHandlers[Ops, Handlers] =
     reusable.asInstanceOf[ValidHandlers[Ops, Handlers]]
-  given [Ops <: Tuple, H <: Tuple](using H <:< Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
+  inline given [Ops <: Tuple, H <: Tuple](using inline ev: H <:< Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
 
 extension [Handlers <: Tuple](handlers: Handlers)
   /**
@@ -441,9 +452,6 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
 )(using quotes: Quotes,
 ): Expr[Target] =
   import quotes.reflect.*
-  val utils = new MacroUtils[quotes.type]
-  import utils.*
-
   val tTpe = TypeRepr.of[Target]
   val members = tTpe.userDeclaredMembers
   val targetSymbol = tTpe.typeSymbol
@@ -509,12 +517,12 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     val value: Expr[Any] = '{ $handlers.productElement(${ Expr(index) }) }
     (argsTpe, outTpe) match
       case (None, '[Unit]) =>
-        '{ $value.asInstanceOf[() => Any].apply() }
+        '{ $value.asInstanceOf[() => Any].apply(): Unit }
       case (None, '[o]) =>
         '{ $value.asInstanceOf[() => o].apply() }
       case (Some('[a]), '[Unit]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
-        '{ $value.asInstanceOf[a => Any].apply($argsTuple) }
+        '{ $value.asInstanceOf[a => Any].apply($argsTuple): Unit }
       case (Some('[a]), '[o]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
         '{ $value.asInstanceOf[a => o].apply($argsTuple) }

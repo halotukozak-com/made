@@ -81,23 +81,23 @@ sealed trait Made:
    * a tuple of [[MadeElem]]s. Available wherever this `Made` instance is in scope so plural
    * extensions like `made.elems.hasAnnotations[A]` summon evidence without explicit imports.
    */
-  given Elems containsOnly MadeElem = containsOnly.refl
+  inline given Elems containsOnly MadeElem = containsOnly.refl
 
   /**
    * Path-dependent evidence: the mirror's [[Metadata]] tuple is a tuple of `Meta` (or
    * `Meta @ann`) entries. Mirrors the guarantee for `hasAnnotation[A]` / `getAnnotation[A]`.
    */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
 
   /**
    * Path-dependent evidence: the mirror's [[GeneratedElems]] tuple is a tuple of
    * [[GeneratedMadeElem]]s. Enables `made.generatedElems.hasAnnotations[A]` analogous to
    * `made.elems.hasAnnotations[A]`.
    */
-  given GeneratedElems containsOnly GeneratedMadeElem = containsOnly.refl
+  inline given GeneratedElems containsOnly GeneratedMadeElem = containsOnly.refl
 
   /** [[ElemLabels]] is all `String`s; path-dependent, so it stays in scope for the `ElemLabels` alias. */
-  given ElemLabels containsOnly String = containsOnly.refl
+  inline given ElemLabels containsOnly String = containsOnly.refl
 
 /**
  * Base type for elements within a [[Made.Elems]] tuple.
@@ -144,7 +144,7 @@ sealed trait MadeElem:
   type Metadata <: Tuple
 
   /** Path-dependent evidence that this element's [[Metadata]] is a tuple of `Meta` entries. */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
 
 /**
  * Element representing a constructor parameter in a product type mirror.
@@ -198,6 +198,11 @@ sealed trait MadeSubElem extends MadeElem
 object MadeSubElem:
   type Of[T] = MadeSubElem { type Type = T }
 
+// workaround for https://github.com/scala/scala3/issues/25245
+private sealed trait MadeSubElemWorkaround[T, L <: String] extends MadeSubElem:
+  final type Type = T
+  final type Label = L
+
 /**
  * Element representing a singleton subtype in a sum type mirror.
  *
@@ -215,6 +220,11 @@ sealed trait MadeSubSingletonElem extends MadeSubElem:
 
 object MadeSubSingletonElem:
   type Of[T] = MadeSubSingletonElem { type Type = T }
+
+// workaround for https://github.com/scala/scala3/issues/25245
+private sealed trait MadeSubSingletonElemWorkaround[T, L <: String] extends MadeSubSingletonElem:
+  final type Type = T
+  final type Label = L
 
 /**
  * Element representing a [[generated]] val or def.
@@ -250,7 +260,7 @@ object MadeElem:
     case MetaOf[meta] => meta
 
   /** `ExtractLabel <: String`, so any `Tuple.Map[Es, ExtractLabel]` is all `String`s (e.g. generated-elem labels). */
-  given [Es <: Tuple] => (Tuple.Map[Es, ExtractLabel] containsOnly String) = containsOnly.refl
+  inline given [Es <: Tuple] => (Tuple.Map[Es, ExtractLabel] containsOnly String) = containsOnly.refl
 
 object Made:
   type Of[T] = Made { type Type = T }
@@ -298,8 +308,6 @@ object Made:
   // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] =
     import quotes.reflect.*
-    val utils = new MacroUtils[quotes.type]
-    import utils.*
 
     // dealiasKeepOpaques unfolds transparent aliases (e.g. `type AliasFoo = Foo`) so that
     // the deriver sees the underlying case class while preserving opaque boundaries.
@@ -386,7 +394,7 @@ object Made:
               case args => ref.appliedToTypes(args)
             applied.asExprOf[E]
 
-      fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue getOrElse '{ NotExists }
+      fromWhenAbsent.orElse(fromOptionalParam).orElse(fromDefaultValue).getOrElse('{ NotExists })
 
     def newTFrom(args: List[Expr[?]]): Expr[T] =
       New(TypeTree.of[T])
@@ -397,7 +405,7 @@ object Made:
     (
       metaTypeOf(tSymbol),
       labelTypeOf(tSymbol, nameOf[T]),
-      Expr.ofRefinedTuple(generatedElems.toList),
+      Expr.ofRefinedTupleFixed(generatedElems.toList),
       // Ascribed to the precise singleton type: `exists`/`notExists` are `inline match`-based and
       // need the scrutinee's static type to be exactly `NotExists.type`, not the broader sealed trait.
       if tCompanion.isNoSymbol then '{ NotExists: NotExists.type } else Ref(tCompanion).asExprOf[AnyRef],
@@ -588,7 +596,7 @@ object Made:
 
             reportOnDuplicates(names)
 
-            Expr.ofRefinedTuple(exprs.toList) match
+            Expr.ofRefinedTupleFixed(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new MadeProductImpl(
@@ -646,7 +654,7 @@ object Made:
 
             reportOnDuplicates(names)
 
-            Expr.ofRefinedTuple(exprs.toList) match
+            Expr.ofRefinedTupleFixed(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new MadeSumImpl(
@@ -669,8 +677,12 @@ object Made:
           case x => report.errorAndAbort(s"Unexpected Mirror type: ${x.show}")
         }
 
-        deriveSingleton orElse deriveTransparent orElse deriveValueClass orElse deriveProduct orElse
-          deriveSum getOrElse:
+        deriveSingleton
+          .orElse(deriveTransparent)
+          .orElse(deriveValueClass)
+          .orElse(deriveProduct)
+          .orElse(deriveSum)
+          .getOrElse:
             report.errorAndAbort(s"Unsupported Mirror type for ${tTpe.show}")
   // $COVERAGE-ON$
 
@@ -699,7 +711,11 @@ object Made:
     def fromTuple(elems: ElemTypes): Type
 
     /** A product's [[Elems]] are all [[MadeFieldElem]]s; refines the base `containsOnly MadeElem`. */
-    given Elems containsOnly MadeFieldElem = containsOnly.refl
+    inline given Elems containsOnly MadeFieldElem = containsOnly.refl
+
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait ProductWorkaround[T] extends Made.Product:
+    final type Type = T
 
   /**
    * Mirror for sum types (sealed traits and enums).
@@ -720,7 +736,11 @@ object Made:
     def ordinal(value: Type): Int
 
     /** A sum's [[Elems]] are all [[MadeSubElem]]s; refines the base `containsOnly MadeElem`. */
-    given Elems containsOnly MadeSubElem = containsOnly.refl
+    inline given Elems containsOnly MadeSubElem = containsOnly.refl
+
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait SumWorkaround[T] extends Made.Sum:
+    final type Type = T
 
   /**
    * Mirror for singleton types (objects and Unit).
@@ -741,6 +761,11 @@ object Made:
     /** Returns the singleton instance. */
     def value: Type
     final def elems: Elems = EmptyTuple
+
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait SingletonWorkaround[T, L <: String] extends Made.Singleton:
+    final type Type = T
+    final type Label = L
 
   /**
    * Mirror for transparent wrapper types (single-field case classes
@@ -772,7 +797,7 @@ object Made:
     final def generatedElems: GeneratedElems = EmptyTuple
 
     /** A transparent type's single [[Elems]] entry is a [[MadeFieldElem]]; refines `containsOnly MadeElem`. */
-    given Elems containsOnly MadeFieldElem = containsOnly.refl
+    inline given Elems containsOnly MadeFieldElem = containsOnly.refl
 
 private final class FieldElemImpl[Outer, Elem](getter: Outer => Elem, elemDefault: Elem | NotExists)
   extends MadeFieldElem:
