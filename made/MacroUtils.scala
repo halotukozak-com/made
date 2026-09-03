@@ -222,4 +222,14 @@ private[made] def extractNameArg(using quotes: Quotes)(annot: Expr[name]): Optio
 
 private[made] given (quotes: Quotes) => Ordering[quotes.reflect.Position] =
   Ordering.by(pos => (pos.sourceFile.path, pos.start, pos.end))
+
+extension (companion: Expr.type)
+  // todo: remove when fixed on commons
+  private[made] def ofRefinedTupleFixed(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] = exprs.runtimeChecked match
+    case Nil => '{ EmptyTuple: EmptyTuple }
+    case '{ $headExpr: h } :: tail =>
+      ofRefinedTupleFixed(tail) match
+        case '{ type t <: Tuple; $tailExpr: t } =>
+          '{ ${ headExpr.asExprOf[h] } *: ${ tailExpr.asExprOf[t] } }
+
 // $COVERAGE-ON$

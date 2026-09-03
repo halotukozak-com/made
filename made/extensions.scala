@@ -103,7 +103,7 @@ private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using qu
 
 @publicInBinary private def hasAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
   : Expr[Tuple.Map[Es, [_] =>> Boolean]] = Expr
-  .ofRefinedTuple:
+  .ofRefinedTupleFixed:
     traverseTupleType(Type.of[Es]).map:
       case '[type m <: Tuple; { type Metadata = m }] => hasAnnotationImpl[A, m]
   .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> Boolean]]]
@@ -112,17 +112,17 @@ private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using qu
   : Expr[Tuple.Map[As, [_] =>> Tuple.Map[Es, [_] =>> Boolean]]] =
   val elems = traverseTupleType(Type.of[Es])
   Expr
-    .ofRefinedTuple:
+    .ofRefinedTupleFixed:
       traverseTupleType(Type.of[As]).map:
         case '[type a <: Annotation; a] =>
-          Expr.ofRefinedTuple:
+          Expr.ofRefinedTupleFixed:
             elems.map:
               case '[type m <: Tuple; { type Metadata = m }] => hasAnnotationImpl[a, m]
     .asInstanceOf[Expr[Tuple.Map[As, [_] =>> Tuple.Map[Es, [_] =>> Boolean]]]]
 
 @publicInBinary private def getAnnotationsImpl[Es <: Tuple: Type, A <: Annotation: Type](using Quotes)
   : Expr[Tuple.Map[Es, [_] =>> A | NotExists]] = Expr
-  .ofRefinedTuple:
+  .ofRefinedTupleFixed:
     traverseTupleType(Type.of[Es]).map:
       case '[type m <: Tuple; { type Metadata = m }] => getAnnotationImpl[A, m]
   .asInstanceOf[Expr[Tuple.Map[Es, [_] =>> A | NotExists]]]

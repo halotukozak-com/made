@@ -417,7 +417,7 @@ object Made:
     (
       metaTypeOf(tSymbol),
       labelTypeOf(tSymbol, nameOf[T]),
-      Expr.ofRefinedTuple(generatedElems.toList),
+      Expr.ofRefinedTupleFixed(generatedElems.toList),
       // Ascribed to the precise singleton type: `exists`/`notExists` are `inline match`-based and
       // need the scrutinee's static type to be exactly `NotExists.type`, not the broader sealed trait.
       if tCompanion.isNoSymbol then '{ NotExists: NotExists.type } else Ref(tCompanion).asExprOf[AnyRef],
@@ -649,7 +649,7 @@ object Made:
 
             reportOnDuplicates(names)
 
-            Expr.ofRefinedTuple(exprs.toList) match
+            Expr.ofRefinedTupleFixed(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new ProductWorkaround[T]:
@@ -711,7 +711,7 @@ object Made:
 
             reportOnDuplicates(names)
 
-            Expr.ofRefinedTuple(exprs.toList) match
+            Expr.ofRefinedTupleFixed(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
                   new SumWorkaround[T]:

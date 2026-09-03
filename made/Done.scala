@@ -334,7 +334,7 @@ object Done:
           labelTypeOf(member, member.name),
           metaTypeOf(member),
           outputTpe,
-          Expr.ofRefinedTuple(inputElems),
+          Expr.ofRefinedTupleFixed(inputElems),
           paramListsType,
         ).runtimeChecked match
           case (
@@ -412,7 +412,7 @@ object Done:
     (
       labelTypeOf(tSymbol, nameOf[T]),
       metaTypeOf(tSymbol),
-      Expr.ofRefinedTuple(operations),
+      Expr.ofRefinedTupleFixed(operations),
     ).runtimeChecked match
       case (
             '[type label <: String; label],
