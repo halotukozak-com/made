@@ -56,10 +56,10 @@ sealed trait Done:
   def operations: Operations
 
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
 
   /** Path-dependent evidence that [[Operations]] is a tuple of [[DoneOperation]]s. */
-  given Operations containsOnly DoneOperation = containsOnly.refl
+  inline given Operations containsOnly DoneOperation = containsOnly.refl
 
 /**
  * Element representing a single operation (field or method) in a [[Done]] mirror.
@@ -102,10 +102,10 @@ sealed trait DoneOperation:
   def inputElems: InputElems
 
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
 
   /** Path-dependent evidence that [[InputElems]] is a tuple of [[InputElem]]s. */
-  given InputElems containsOnly InputElem = containsOnly.refl
+  inline given InputElems containsOnly InputElem = containsOnly.refl
 
   /** The enclosing type that declares this operation — equals [[Done.Type]] of the parent [[Done]] mirror. */
   type OuterType
@@ -182,7 +182,7 @@ sealed trait InputElem:
   type Metadata <: Tuple
 
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
-  given Metadata containsOnly Meta = containsOnly.refl
+  inline given Metadata containsOnly Meta = containsOnly.refl
 
 object InputElem:
   type Of[T] = InputElem { type Type = T }
@@ -439,7 +439,7 @@ object ValidHandlers:
 
   def refl[Ops <: Tuple, Handlers <: Tuple]: ValidHandlers[Ops, Handlers] =
     reusable.asInstanceOf[ValidHandlers[Ops, Handlers]]
-  given [Ops <: Tuple, H <: Tuple](using H <:< Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
+  inline given [Ops <: Tuple, H <: Tuple](using inline ev: H <:< Done.HandlersOf[Ops]): ValidHandlers[Ops, H] = refl
 
 extension [Handlers <: Tuple](handlers: Handlers)
   /**
