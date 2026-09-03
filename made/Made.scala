@@ -308,8 +308,6 @@ object Made:
   // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] =
     import quotes.reflect.*
-    val utils = new MacroUtils[quotes.type]
-    import utils.*
 
     // dealiasKeepOpaques unfolds transparent aliases (e.g. `type AliasFoo = Foo`) so that
     // the deriver sees the underlying case class while preserving opaque boundaries.
