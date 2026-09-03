@@ -4,7 +4,7 @@ import scala.annotation.{publicInBinary, Annotation}
 import scala.quoted.*
 import halotukozak.commons.*
 
-extension [M <: Tuple](self: { type Metadata = M })(using M containsOnly Meta)
+extension [M <: Tuple](self: { type Metadata = M })(using inline ev: M containsOnly Meta)
   /**
    * Returns `true` if the mirror's `Metadata` tuple contains an annotation of type `A`.
    *
@@ -47,7 +47,7 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
+extension (es: Tuple)(using inline ev: es.type containsOnly { type Metadata <: Tuple })
   /**
    * Per-element [[hasAnnotation]] over a tuple whose entries each declare a `Metadata` type member
    * (e.g. a tuple of [[MadeElem]]s, [[GeneratedMadeElem]]s, or a singleton `Made` instance's
@@ -61,8 +61,9 @@ extension (es: Tuple)(using es.type containsOnly { type Metadata <: Tuple })
    * `(flagsFor0, flagsFor1, …)`, each a per-element `Boolean` tuple. Same result as calling
    * [[hasAnnotations]] once per entry of `As`, but walks `es` a single time.
    */
-  transparent inline def hasAnnotationsByType[As <: Tuple: Of[Annotation]]
-    : Tuple.Map[As, [_] =>> Tuple.Map[es.type, [_] =>> Boolean]] =
+  transparent inline def hasAnnotationsByType[As <: Tuple](
+    using inline ev1: As containsOnly Annotation,
+  ): Tuple.Map[As, [_] =>> Tuple.Map[es.type, [_] =>> Boolean]] =
     ${ hasAnnotationsByTypeImpl[es.type, As] }
 
   /**
