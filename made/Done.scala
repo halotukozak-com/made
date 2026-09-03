@@ -546,12 +546,12 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     val value: Expr[Any] = '{ $handlers.productElement(${ Expr(index) }) }
     (argsTpe, outTpe) match
       case (None, '[Unit]) =>
-        '{ $value.asInstanceOf[() => Any].apply() }
+        '{ ($value.asInstanceOf[() => Any].apply()): Unit }
       case (None, '[o]) =>
         '{ $value.asInstanceOf[() => o].apply() }
       case (Some('[a]), '[Unit]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
-        '{ $value.asInstanceOf[a => Any].apply($argsTuple) }
+        '{ ($value.asInstanceOf[a => Any].apply($argsTuple)): Unit }
       case (Some('[a]), '[o]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
         '{ $value.asInstanceOf[a => o].apply($argsTuple) }
