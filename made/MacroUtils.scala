@@ -225,11 +225,14 @@ private[made] given (quotes: Quotes) => Ordering[quotes.reflect.Position] =
 
 extension (companion: Expr.type)
   // todo: remove when fixed on commons
-  private[made] def ofRefinedTupleFixed(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] = exprs.runtimeChecked match
-    case Nil => '{ EmptyTuple: EmptyTuple }
-    case '{ $headExpr: h } :: tail =>
-      ofRefinedTupleFixed(tail) match
-        case '{ type t <: Tuple; $tailExpr: t } =>
-          '{ ${ headExpr.asExprOf[h] } *: ${ tailExpr.asExprOf[t] } }
+  private[made] def ofRefinedTupleFixed(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] =
+    import quotes.reflect.*
+    exprs match
+      case Nil => '{ EmptyTuple: EmptyTuple }
+      case _ =>
+        val tpe = exprs.foldRight(TypeRepr.of[EmptyTuple]): (e, acc) =>
+          TypeRepr.of[*:].appliedTo(List(e.asTerm.tpe.widenTermRefByName, acc))
+        tpe.asType match
+          case '[type t <: Tuple; t] => '{ Tuple.fromArray(Array(${ Varargs[Any](exprs) }*)).asInstanceOf[t] }
 
 // $COVERAGE-ON$
