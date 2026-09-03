@@ -180,11 +180,6 @@ object MadeFieldElem:
   type Of[T] = MadeFieldElem { type Type = T }
   type OuterOf[Outer] = MadeFieldElem { type OuterType = Outer }
 
-// workaround for https://github.com/scala/scala3/issues/25245
-private sealed trait MadeFieldElemWorkaround[Outer, Elem] extends MadeFieldElem:
-  final type OuterType = Outer
-  final type Type = Elem
-
 /**
  * Element representing a non-singleton subtype in a sum type mirror.
  *
@@ -202,11 +197,6 @@ sealed trait MadeSubElem extends MadeElem
 
 object MadeSubElem:
   type Of[T] = MadeSubElem { type Type = T }
-
-// workaround for https://github.com/scala/scala3/issues/25245
-private sealed trait MadeSubElemWorkaround[T, L <: String] extends MadeSubElem:
-  final type Type = T
-  final type Label = L
 
 /**
  * Element representing a singleton subtype in a sum type mirror.
@@ -226,11 +216,6 @@ sealed trait MadeSubSingletonElem extends MadeSubElem:
 object MadeSubSingletonElem:
   type Of[T] = MadeSubSingletonElem { type Type = T }
 
-// workaround for https://github.com/scala/scala3/issues/25245
-private sealed trait MadeSubSingletonElemWorkaround[T, L <: String] extends MadeSubSingletonElem:
-  final type Type = T
-  final type Label = L
-
 /**
  * Element representing a [[generated]] val or def.
  *
@@ -249,11 +234,6 @@ sealed trait GeneratedMadeElem extends MadeFieldElem:
 object GeneratedMadeElem:
   type Of[T] = GeneratedMadeElem { type Type = T }
   type OuterOf[Outer] = GeneratedMadeElem { type OuterType = Outer }
-
-// workaround for https://github.com/scala/scala3/issues/25245
-private sealed trait GeneratedMadeElemWorkaround[Outer, Elem] extends GeneratedMadeElem:
-  final type OuterType = Outer
-  final type Type = Elem
 
 object MadeElem:
   type Of[T] = MadeElem { type Type = T }
@@ -347,16 +327,15 @@ object Made:
       (elemTpe.asType, labelTypeOf(member, member.name), metaTypeOf(member)).runtimeChecked match
         case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
           '{
-            new GeneratedMadeElemWorkaround[T, elemTpe]:
-              type Label = elemLabel
-              type Metadata = meta
-              def apply(outer: T): elemTpe = ${ '{ outer }.asTerm.select(member).asExprOf[elemTpe] }
-            : GeneratedMadeElem {
-              type Type = elemTpe
-              type Label = elemLabel
-              type Metadata = meta
-              type OuterType = T
-            }
+            new GeneratedFieldElemImpl[T, elemTpe](outer => ${ '{ outer }.asTerm.select(member).asExprOf[elemTpe] })
+              .asInstanceOf[
+                GeneratedMadeElem {
+                  type Type = elemTpe
+                  type Label = elemLabel
+                  type Metadata = meta
+                  type OuterType = T
+                },
+              ]
           }
 
     def singleCaseFieldOf(symbol: Symbol): Symbol = symbol.caseFields match
@@ -367,18 +346,17 @@ object Made:
       (field.termRef.widen.asType, labelTypeOf(field, field.name), metaTypeOf(field)).runtimeChecked match
         case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Tuple; fieldMeta]) =>
           '{
-            new MadeFieldElemWorkaround[T, fieldType]:
-              type Label = elemLabel
-              type Metadata = fieldMeta
-
-              def apply(outer: T): fieldType = ${ '{ outer }.asTerm.select(field).asExprOf[fieldType] }
-              def default = ${ defaultOf[fieldType](0, field) }
-            : MadeFieldElem {
-              type Type = fieldType
-              type Label = elemLabel
-              type Metadata = fieldMeta
-              type OuterType = T
-            }
+            new FieldElemImpl[T, fieldType](
+              outer => ${ '{ outer }.asTerm.select(field).asExprOf[fieldType] },
+              ${ defaultOf[fieldType](0, field) },
+            ).asInstanceOf[
+              MadeFieldElem {
+                type Type = fieldType
+                type Label = elemLabel
+                type Metadata = fieldMeta
+                type OuterType = T
+              },
+            ]
           }
 
     def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[E | NotExists] =
@@ -432,43 +410,27 @@ object Made:
           Type.of[T] match
             case '[type s <: scala.Singleton; s] =>
               '{
-                new SingletonWorkaround[s, label]:
-                  type Metadata = meta
-                  type GeneratedElems = generatedElems
-
-                  def generatedElems: GeneratedElems = $generatedElemsExpr
-                  def value: s = singleValueOf[s]
-
-                  type Companion = NotExists.type
-                  val companion: NotExists.type = NotExists
-                .asInstanceOf[
-                  Made.SingletonOf[T] {
-                    type Label = label
-                    type Metadata = meta
-                    type GeneratedElems = generatedElems
-                    type Companion = NotExists.type
-                  },
-                ]
+                new MadeSingletonImpl(singleValueOf[s], $generatedElemsExpr)
+                  .asInstanceOf[
+                    Made.SingletonOf[T] {
+                      type Label = label
+                      type Metadata = meta
+                      type GeneratedElems = generatedElems
+                      type Companion = NotExists.type
+                    },
+                  ]
               }
             case '[Unit] =>
               '{
-                new SingletonWorkaround[Unit, label]:
-                  type Metadata = meta
-                  type GeneratedElems = generatedElems
-
-                  def generatedElems: GeneratedElems = $generatedElemsExpr
-                  def value: Unit = ()
-
-                  type Companion = NotExists.type
-                  val companion: NotExists.type = NotExists
-                .asInstanceOf[
-                  Made.SingletonOf[T] {
-                    type Label = label
-                    type Metadata = meta
-                    type GeneratedElems = generatedElems
-                    type Companion = NotExists.type
-                  },
-                ]
+                new MadeSingletonImpl((), $generatedElemsExpr)
+                  .asInstanceOf[
+                    Made.SingletonOf[T] {
+                      type Label = label
+                      type Metadata = meta
+                      type GeneratedElems = generatedElems
+                      type Companion = NotExists.type
+                    },
+                  ]
               }
         }
 
@@ -487,26 +449,16 @@ object Made:
                 } =>
               '{
                 val tw = TransparentWrapping.derived[fieldType, T]
-
-                new TransparentWorkaround[T, fieldType]:
-                  type Label = label
-                  type Metadata = meta
-
-                  type Elems = madeFieldElem *: EmptyTuple
-                  def elems: Elems = $madeFieldExpr *: EmptyTuple
-
-                  def unwrap(value: Type): ElemType = tw.unwrap(value)
-                  def wrap(value: ElemType): Type = tw.wrap(value)
-
-                  type Companion = companion
-                  val companion: Companion = $companionExpr
-                : Made.TransparentOf[T] {
-                  type Label = label
-                  type ElemType = fieldType
-                  type Metadata = meta
-                  type Elems = madeFieldElem *: EmptyTuple
-                  type Companion = companion
-                }
+                new MadeTransparentImpl($madeFieldExpr *: EmptyTuple, tw.unwrap, tw.wrap, $companionExpr)
+                  .asInstanceOf[
+                    Made.TransparentOf[T] {
+                      type Label = label
+                      type ElemType = fieldType
+                      type Metadata = meta
+                      type Elems = madeFieldElem *: EmptyTuple
+                      type Companion = companion
+                    },
+                  ]
               }
         }
 
@@ -518,24 +470,13 @@ object Made:
                   $madeFieldExpr: madeFieldElem
                 } =>
               '{
-                new ProductWorkaround[T]:
-                  type Label = label
-                  type Metadata = meta
-
-                  type Elems = madeFieldElem *: EmptyTuple
-                  def elems: Elems = $madeFieldExpr *: EmptyTuple
-
-                  type GeneratedElems = generatedElems
-                  def generatedElems: GeneratedElems = $generatedElemsExpr
-
-                  def fromUnsafeArray(product: Array[Any]): T =
-                    ${ newTFrom(List('{ product(0).asInstanceOf[fieldType] })) }
-                  def fromTuple(elems: ElemTypes): T =
-                    ${ newTFrom(List('{ elems.head.asInstanceOf[fieldType] })) }
-
-                  type Companion = companion
-                  val companion: Companion = $companionExpr
-                .asInstanceOf[
+                new MadeProductImpl(
+                  $madeFieldExpr *: EmptyTuple,
+                  product => ${ newTFrom(List('{ product(0).asInstanceOf[fieldType] })) },
+                  elemsT => ${ newTFrom(List('{ elemsT.productElement(0).asInstanceOf[fieldType] })) },
+                  $generatedElemsExpr,
+                  $companionExpr,
+                ).asInstanceOf[
                   Made.ProductOf[T] {
                     type Label = label
                     type Metadata = meta
@@ -605,20 +546,17 @@ object Made:
                     (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
                       case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
                         val expr = '{
-                          new MadeFieldElemWorkaround[T, fieldTpe]:
-                            type Label = elemLabel
-                            type Metadata = meta
-
-                            def apply(outer: T): fieldTpe = ${
-                              '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe]
-                            }
-                            def default = ${ defaultOf[fieldTpe](index, fieldSymbol) }
-                          : MadeFieldElem {
-                            type Type = fieldTpe
-                            type Label = elemLabel
-                            type Metadata = meta
-                            type OuterType = T
-                          }
+                          new FieldElemImpl[T, fieldTpe](
+                            outer => ${ '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe] },
+                            ${ defaultOf[fieldTpe](index, fieldSymbol) },
+                          ).asInstanceOf[
+                            MadeFieldElem {
+                              type Type = fieldTpe
+                              type Label = elemLabel
+                              type Metadata = meta
+                              type OuterType = T
+                            },
+                          ]
                         }
                         (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
                   case _ => wontHappen
@@ -630,21 +568,18 @@ object Made:
                 .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                   case ((exprs, names), (('[fieldTpe], '[type mirrorLabel <: String; mirrorLabel]), index)) =>
                     val expr = '{
-                      new MadeFieldElemWorkaround[T, fieldTpe]:
-                        type Label = mirrorLabel
-                        type Metadata = EmptyTuple
-
-                        def apply(outer: T): fieldTpe = outer
-                          .asInstanceOf[scala.Product]
-                          .productElement(${ Expr(index) })
-                          .asInstanceOf[fieldTpe]
-                        def default: NotExists = NotExists
-                      : MadeFieldElem {
-                        type Type = fieldTpe
-                        type Label = mirrorLabel
-                        type Metadata = EmptyTuple
-                        type OuterType = T
-                      }
+                      new FieldElemImpl[T, fieldTpe](
+                        outer =>
+                          outer.asInstanceOf[scala.Product].productElement(${ Expr(index) }).asInstanceOf[fieldTpe],
+                        NotExists,
+                      ).asInstanceOf[
+                        MadeFieldElem {
+                          type Type = fieldTpe
+                          type Label = mirrorLabel
+                          type Metadata = EmptyTuple
+                          type OuterType = T
+                        },
+                      ]
                     }
                     (exprs :+ expr, names :+ (typeToString[mirrorLabel], typeToString[mirrorLabel]))
                   case _ => wontHappen
@@ -654,21 +589,13 @@ object Made:
             Expr.ofRefinedTupleFixed(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
-                  new ProductWorkaround[T]:
-                    type Label = label
-                    type Metadata = meta
-                    type Elems = mirroredElems
-
-                    def elems: Elems = $mirroredElemsExpr
-                    def fromUnsafeArray(product: Array[Any]): T = $m.fromProduct(Tuple.fromArray(product))
-                    def fromTuple(elems: ElemTypes): T = $m.fromProduct(elems)
-
-                    type GeneratedElems = generatedElems
-                    def generatedElems: GeneratedElems = $generatedElemsExpr
-
-                    type Companion = companion
-                    val companion: Companion = $companionExpr
-                  .asInstanceOf[
+                  new MadeProductImpl(
+                    $mirroredElemsExpr,
+                    product => $m.fromProduct(Tuple.fromArray(product)),
+                    elemsT => $m.fromProduct(elemsT),
+                    $generatedElemsExpr,
+                    $companionExpr,
+                  ).asInstanceOf[
                     Made.ProductOf[T] {
                       type Label = label
                       type Metadata = meta
@@ -700,29 +627,17 @@ object Made:
                       val expr = Type.of[subType] match
                         case '[type s <: scala.Singleton; s] =>
                           '{
-                            new MadeSubSingletonElemWorkaround[s, elemLabel]:
-                              type Metadata = meta
-
-                              def value: s = singleValueOf[s]
-                            .asInstanceOf[
-                              MadeSubSingletonElem {
-                                type Type = s
-                                type Label = elemLabel
-                                type Metadata = meta
-                              },
-                            ]
+                            new SubSingletonElemImpl[s](singleValueOf[s])
+                              .asInstanceOf[
+                                MadeSubSingletonElem { type Type = s; type Label = elemLabel; type Metadata = meta },
+                              ]
                           }
                         case '[s] =>
                           '{
-                            new MadeSubElemWorkaround[subType, elemLabel]:
-                              type Metadata = meta
-                            .asInstanceOf[
-                              MadeSubElem {
-                                type Type = subType
-                                type Label = elemLabel
-                                type Metadata = meta
-                              },
-                            ]
+                            SubElemImpl
+                              .asInstanceOf[
+                                MadeSubElem { type Type = subType; type Label = elemLabel; type Metadata = meta },
+                              ]
                           }
                       (exprs :+ expr, names :+ (typeToString[elemLabel], subSymbol.name))
                 case _ => wontHappen
@@ -732,19 +647,12 @@ object Made:
             Expr.ofRefinedTupleFixed(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
-                  new SumWorkaround[T]:
-                    type Label = label
-                    type Metadata = meta
-                    type Elems = mirroredElems
-                    def elems: Elems = $mirroredElemsExpr
-                    def ordinal(value: T): Int = $m.ordinal(value)
-
-                    type GeneratedElems = generatedElems
-                    def generatedElems: GeneratedElems = $generatedElemsExpr
-
-                    type Companion = companion
-                    val companion: Companion = $companionExpr
-                  .asInstanceOf[
+                  new MadeSumImpl(
+                    $mirroredElemsExpr,
+                    $m.ordinal,
+                    $generatedElemsExpr,
+                    $companionExpr,
+                  ).asInstanceOf[
                     Made.SumOf[T] {
                       type Label = label
                       type Metadata = meta
@@ -795,10 +703,6 @@ object Made:
     /** A product's [[Elems]] are all [[MadeFieldElem]]s; refines the base `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeFieldElem = containsOnly.refl
 
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait ProductWorkaround[T] extends Made.Product:
-    final type Type = T
-
   /**
    * Mirror for sum types (sealed traits and enums).
    *
@@ -820,10 +724,6 @@ object Made:
     /** A sum's [[Elems]] are all [[MadeSubElem]]s; refines the base `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeSubElem = containsOnly.refl
 
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait SumWorkaround[T] extends Made.Sum:
-    final type Type = T
-
   /**
    * Mirror for singleton types (objects and Unit).
    *
@@ -843,11 +743,6 @@ object Made:
     /** Returns the singleton instance. */
     def value: Type
     final def elems: Elems = EmptyTuple
-
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait SingletonWorkaround[T, L <: String] extends Made.Singleton:
-    final type Type = T
-    final type Label = L
 
   /**
    * Mirror for transparent wrapper types (single-field case classes
@@ -881,7 +776,64 @@ object Made:
     /** A transparent type's single [[Elems]] entry is a [[MadeFieldElem]]; refines `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeFieldElem = containsOnly.refl
 
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait TransparentWorkaround[T, U] extends Made.Transparent:
-    final type Type = T
-    final type ElemType = U
+private final class FieldElemImpl[Outer, Elem](getter: Outer => Elem, elemDefault: Elem | NotExists)
+  extends MadeFieldElem:
+  type OuterType = Outer
+  type Type = Elem
+  def apply(outer: Outer): Elem = getter(outer)
+  def default: Elem | NotExists = elemDefault
+
+private object SubElemImpl extends MadeSubElem
+
+private final class SubSingletonElemImpl[S](val value: S) extends MadeSubSingletonElem:
+  type Type = S
+
+private final class GeneratedFieldElemImpl[Outer, Elem](getter: Outer => Elem) extends GeneratedMadeElem:
+  type OuterType = Outer
+  type Type = Elem
+  def apply(outer: Outer): Elem = getter(outer)
+
+private final class MadeProductImpl[T, E <: Tuple, G <: Tuple, C <: AnyRef | NotExists](
+  val elems: E,
+  fromArrayFn: Array[Any] => T,
+  fromTupleFn: Tuple => T,
+  val generatedElems: G,
+  val companion: C,
+) extends Made.Product:
+  type Type = T
+  type Elems = E
+  type GeneratedElems = G
+  type Companion = C
+  def fromUnsafeArray(product: Array[Any]): T = fromArrayFn(product)
+  def fromTuple(elems: ElemTypes): T = fromTupleFn(elems)
+
+private final class MadeSumImpl[T, E <: Tuple, G <: Tuple, C <: AnyRef | NotExists](
+  val elems: E,
+  ordinalFn: T => Int,
+  val generatedElems: G,
+  val companion: C,
+) extends Made.Sum:
+  type Type = T
+  type Elems = E
+  type GeneratedElems = G
+  type Companion = C
+  def ordinal(value: T): Int = ordinalFn(value)
+
+private final class MadeSingletonImpl[S, G <: Tuple](val value: S, val generatedElems: G) extends Made.Singleton:
+  type Type = S
+  type GeneratedElems = G
+  type Companion = NotExists.type
+  val companion: NotExists.type = NotExists
+
+private final class MadeTransparentImpl[T, U, E <: MadeElem.Of[U] *: EmptyTuple, C <: AnyRef | NotExists](
+  val elems: E,
+  unwrapFn: T => U,
+  wrapFn: U => T,
+  val companion: C,
+) extends Made.Transparent:
+  type Type = T
+  type ElemType = U
+  type Elems = E
+  type Companion = C
+  def unwrap(value: T): U = unwrapFn(value)
+  def wrap(value: U): T = wrapFn(value)

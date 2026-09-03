@@ -184,10 +184,6 @@ sealed trait InputElem:
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
   inline given Metadata containsOnly Meta = containsOnly.refl
 
-// workaround for https://github.com/scala/scala3/issues/25245
-private sealed trait InputElemWorkaround[T] extends InputElem:
-  final type Type = T
-
 object InputElem:
   type Of[T] = InputElem { type Type = T }
   type LabelOf[l <: String] = InputElem { type Label = l }
@@ -199,10 +195,6 @@ object InputElem:
 
 object Done:
   type Of[T] = Done { type Type = T }
-
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait DoneWorkaround[T] extends Done:
-    final type Type = T
 
   /**
    * Maps a tuple of [[DoneOperation]]s to the corresponding tuple of handler function types.
@@ -243,11 +235,6 @@ object Done:
    * @see [[InputElem]]
    */
   transparent inline given derived[T]: Done.Of[T] = ${ derivedImpl[T] }
-
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait DoneOperationWorkaround[Outer, Out] extends DoneOperation:
-    final type OuterType = Outer
-    final type OutputType = Out
 
   // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] =
@@ -314,10 +301,7 @@ object Done:
                     '[type paramMeta <: Tuple; paramMeta],
                   ) =>
                 '{
-                  new InputElemWorkaround[inputTpe]:
-                    override type Label = inputLabel
-                    override type Metadata = paramMeta
-                  .asInstanceOf[
+                  InputElemImpl.asInstanceOf[
                     InputElem {
                       type Type = inputTpe
                       type Label = inputLabel
@@ -356,16 +340,9 @@ object Done:
             params match
               case Nil =>
                 '{
-                  new DoneOperationWorkaround[T, outputTpe] with DoneOperation.EmptyApply:
-                    override type Label = opLabel
-                    override type Metadata = opMeta
-                    override type InputElems = inputElems
-                    override type ParamLists = paramLists
-
-                    override val inputElems: InputElems = $inputElemsExpr
-                    override def apply(outer: T, args: Args): outputTpe =
-                      ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  .asInstanceOf[
+                  new EmptyDoneOperationImpl[T, outputTpe](outer =>
+                    ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ EmptyTuple }) },
+                  ).asInstanceOf[
                     DoneOperation.EmptyApply {
                       type Label = opLabel
                       type Metadata = opMeta
@@ -378,17 +355,10 @@ object Done:
                 }
               case (_, '[argT]) :: Nil =>
                 '{
-                  new DoneOperationWorkaround[T, outputTpe] with DoneOperation.SingleApply:
-                    override type Label = opLabel
-                    override type Metadata = opMeta
-                    override type InputElems = inputElems
-                    override type ParamLists = paramLists
-                    override type Arg = argT
-
-                    override val inputElems: InputElems = $inputElemsExpr
-                    override def apply(outer: T, args: Args): outputTpe =
-                      ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  .asInstanceOf[
+                  new SingleDoneOperationImpl[T, outputTpe, argT](
+                    InputElemImpl.asInstanceOf[InputElem.Of[argT]] *: EmptyTuple,
+                    (outer, args) => ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args }) },
+                  ).asInstanceOf[
                     DoneOperation.SingleApply {
                       type Label = opLabel
                       type Metadata = opMeta
@@ -402,16 +372,10 @@ object Done:
                 }
               case _ =>
                 '{
-                  new DoneOperationWorkaround[T, outputTpe]:
-                    override type Label = opLabel
-                    override type Metadata = opMeta
-                    override type InputElems = inputElems
-                    override type ParamLists = paramLists
-
-                    override val inputElems: InputElems = $inputElemsExpr
-                    override def apply(outer: T, args: Args): outputTpe =
-                      ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  .asInstanceOf[
+                  new DoneOperationImpl[T, outputTpe, inputElems](
+                    $inputElemsExpr,
+                    (outer, args) => ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args }) },
+                  ).asInstanceOf[
                     DoneOperation {
                       type Label = opLabel
                       type Metadata = opMeta
@@ -434,13 +398,7 @@ object Done:
             '{ type operations <: Tuple; $operationsExpr: operations },
           ) =>
         '{
-          new DoneWorkaround[T]:
-            override type Label = label
-            override type Metadata = meta
-            override type Operations = operations
-
-            override val operations: Operations = $operationsExpr
-          .asInstanceOf[
+          new DoneImpl[T, label, meta, operations]($operationsExpr).asInstanceOf[
             Done.Of[T] {
               type Label = label
               type Metadata = meta
@@ -569,3 +527,35 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
   )
   Block(List(clsDef), instance).asExprOf[Target]
 // $COVERAGE-ON$
+
+private object InputElemImpl extends InputElem
+
+private final class DoneImpl[T, L <: String, M <: Tuple, Ops <: Tuple](val operations: Ops) extends Done:
+  type Type = T
+  type Label = L
+  type Metadata = M
+  type Operations = Ops
+
+private final class DoneOperationImpl[Outer, Out, IE <: Tuple](val inputElems: IE, invoke: (Outer, Tuple) => Out)
+  extends DoneOperation:
+  type OuterType = Outer
+  type OutputType = Out
+  type InputElems = IE
+  def apply(outer: Outer, args: Args): Out = invoke(outer, args.asInstanceOf[Tuple])
+
+private final class EmptyDoneOperationImpl[Outer, Out](invoke: Outer => Out) extends DoneOperation.EmptyApply:
+  type OuterType = Outer
+  type OutputType = Out
+  type InputElems = EmptyTuple
+  val inputElems: EmptyTuple = EmptyTuple
+  def apply(outer: Outer, args: Args): Out = invoke(outer)
+
+private final class SingleDoneOperationImpl[Outer, Out, ArgT](
+  val inputElems: InputElem.Of[ArgT] *: EmptyTuple,
+  invoke: (Outer, Tuple) => Out,
+) extends DoneOperation.SingleApply:
+  type OuterType = Outer
+  type OutputType = Out
+  type Arg = ArgT
+  type InputElems = InputElem.Of[ArgT] *: EmptyTuple
+  def apply(outer: Outer, args: Args): Out = invoke(outer, args.asInstanceOf[Tuple])
