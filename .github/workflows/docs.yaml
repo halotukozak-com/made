@@ -39,7 +39,7 @@ jobs:
           # name should differ from the repo slug, e.g. made -> "M&DE".
           PROJECT_NAME: ${{ vars.PROJECT_NAME || github.event.repository.name }}
         run: |
-          scala-cli --power doc . -- \
+          scala-cli --power doc . --exclude benchmark -- \
           -project "$PROJECT_NAME" \
           -project-version ${{ github.ref_name }} \
           -project-footer "made with ❤️ and coffee" \
