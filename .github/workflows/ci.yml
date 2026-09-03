@@ -16,7 +16,10 @@ jobs:
         uses: coursier/cache-action@v8.1
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Check formatting
-        run: scala-cli --power fmt --check .
+        # benchmark/ is a separate scala-cli build (competitor deps, JMH) —
+        # excluded here even for repos without one, since --exclude is a
+        # no-op glob filter when nothing matches.
+        run: scala-cli --power fmt --check . --exclude benchmark
 
   test:
     name: Test
@@ -38,7 +41,7 @@ jobs:
       - name: Run tests
         # Coverage is recorded only for production sources; tests were previously
         # measured as 100%-covered and inflated the reported number.
-        run: scala-cli --power test . -O -coverage-out:./.scoverage -O '-coverage-exclude-files:.*test/.*'
+        run: scala-cli --power test . --exclude benchmark -O -coverage-out:./.scoverage -O '-coverage-exclude-files:.*test/.*'
       - name: Generate coverage
         run: scala-cli .scoverage/report.sc
       - uses: codecov/codecov-action@v7
@@ -47,7 +50,7 @@ jobs:
           files: .scoverage/report/cobertura.xml
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Test documentation
-        run: scala-cli --power doc .
+        run: scala-cli --power doc . --exclude benchmark
 
   compile:
     name: Compile (${{ matrix.platform }})
@@ -75,7 +78,7 @@ jobs:
             scala-build-${{ matrix.platform }}-
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Compile
-        run: scala-cli --power compile . --platform ${{ matrix.platform }} ${{ matrix.args }}
+        run: scala-cli --power compile . --exclude benchmark --platform ${{ matrix.platform }} ${{ matrix.args }}
 
   # JVM is covered by the `test` job above (with coverage/docs); this just runs
   # the same suite on the other targets to catch platform-specific regressions.
@@ -103,4 +106,4 @@ jobs:
             scala-build-${{ matrix.platform }}-
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Run tests
-        run: scala-cli --power test . --platform ${{ matrix.platform }} ${{ matrix.args }}
+        run: scala-cli --power test . --exclude benchmark --platform ${{ matrix.platform }} ${{ matrix.args }}
