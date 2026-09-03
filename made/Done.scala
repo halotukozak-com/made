@@ -184,7 +184,6 @@ sealed trait InputElem:
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
   inline given Metadata containsOnly Meta = containsOnly.refl
 
-
 object InputElem:
   type Of[T] = InputElem { type Type = T }
   type LabelOf[l <: String] = InputElem { type Label = l }
