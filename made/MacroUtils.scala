@@ -1,11 +1,11 @@
 package halotukozak.made
 
+import halotukozak.*
 import halotukozak.made.annotation.{name, repeated, AnnotationAggregate, MetaAnnotation}
 
 import scala.annotation.{tailrec, Annotation, StaticAnnotation}
 import scala.collection.immutable.List
 import scala.quoted.*
-import halotukozak.*
 
 // $COVERAGE-OFF$
 // like ValueOf but without the implicit search and boxing
@@ -64,155 +64,175 @@ private[made] def reportOnDuplicates(labels: Seq[(label: String, original: Strin
     .foreach: (label, originals) =>
       if originals.sizeIs > 1 then report.error(s"${originals.mkString(", ")} have the same @name: $label")
 
-private[made] class MacroUtils[Q <: Quotes](using val quotes: Q):
+extension (using quotes: Quotes)(symbol: quotes.reflect.Symbol)
+  /**
+   * Symbols whose annotations are considered to "belong" to this symbol: the symbol itself,
+   * the matching constructor parameter of its owning class (for case class accessors), and all
+   * symbols overridden by this one.
+   */
+  def annotationSymbols: List[quotes.reflect.Symbol] =
+    metaSymbolsOf(symbol) ::: symbol.allOverriddenSymbols.toList
+
+  /**
+   * Annotations on `annotationSymbols` with `AnnotationAggregate` annotations recursively
+   * expanded.
+   */
+  def expandedAnnotations: List[quotes.reflect.Term] =
+    expandAggregates(symbol.annotationSymbols.flatMap(_.annotations))
+
+  def hasAnnotationOf[AT <: Annotation: Type] =
+    val at = quotes.reflect.TypeRepr.of[AT]
+    symbol.expandedAnnotations.exists(_.tpe <:< at)
+
+  def hasOrInheritsAnnotationOf[AT <: Annotation: Type] =
+    symbol.hasAnnotationOf[AT]
+
+  def getAnnotationOf[AT <: Annotation: Type] =
+    val at = quotes.reflect.TypeRepr.of[AT]
+    symbol.expandedAnnotations.find(_.tpe <:< at).map(_.asExprOf[AT])
+
+private[made] def expandAggregates(using quotes: Quotes)(annots: List[quotes.reflect.Term]): List[quotes.reflect.Term] =
   import quotes.reflect.*
 
-  extension (symbol: Symbol)
-    /**
-     * Symbols whose annotations are considered to "belong" to this symbol: the symbol itself,
-     * the matching constructor parameter of its owning class (for case class accessors), and all
-     * symbols overridden by this one.
-     */
-    def annotationSymbols: List[Symbol] =
-      metaSymbolsOf(symbol) ::: symbol.allOverriddenSymbols.toList
+  val aggregateTpe = TypeRepr.of[AnnotationAggregate]
+  val staticTpe = TypeRepr.of[StaticAnnotation]
 
-    /**
-     * Annotations on `annotationSymbols` with `AnnotationAggregate` annotations recursively
-     * expanded.
-     */
-    def expandedAnnotations: List[Term] =
-      expandAggregates(symbol.annotationSymbols.flatMap(_.annotations))
+  def collectArgs(annot: Term): (List[TypeRepr], List[Term]) =
+    def loop(t: Term, vAcc: List[Term]): (List[TypeRepr], List[Term]) = t match
+      case Apply(fun, args) => loop(fun, args ++ vAcc)
+      case TypeApply(fun, tArgs) =>
+        val (_, vs) = loop(fun, vAcc)
+        (tArgs.map(_.tpe), vs)
+      case Select(New(tpt), _) => (tpt.tpe.typeArgs, vAcc)
+      case _ => (Nil, vAcc)
+    loop(annot, Nil)
 
-    def hasAnnotationOf[AT <: Annotation: Type] =
-      val at = TypeRepr.of[AT]
-      symbol.expandedAnnotations.exists(_.tpe <:< at)
+  def substituteRefs(term: Term, valueMap: Map[Symbol, Term]): Term =
+    val byName: Map[String, Term] = valueMap.map((sym, t) => sym.name -> t)
+    val tr = new TreeMap:
+      override def transformTerm(tree: Term)(owner: Symbol): Term = tree match
+        case id: Ident if byName.contains(id.name) => byName(id.name)
+        case Select(This(_), n) if byName.contains(n) => byName(n)
+        case other => super.transformTerm(other)(owner)
+    tr.transformTerm(term)(Symbol.spliceOwner)
 
-    def hasOrInheritsAnnotationOf[AT <: Annotation: Type] =
-      symbol.hasAnnotationOf[AT]
+  def rebuildAnnot(inner: Term, valueMap: Map[Symbol, Term]): Term =
+    val annotCls = inner.tpe.typeSymbol
+    val ctor = annotCls.primaryConstructor
+    val (_, rawArgs) = collectArgs(inner)
+    val concreteArgs = rawArgs.map(substituteRefs(_, valueMap))
+    val classTpe = annotCls.typeRef
+    val newTree: Term = New(Inferred(classTpe))
+    val selectedCtor: Term = Select(newTree, ctor)
+    val typeArgs = inner.tpe.typeArgs
+    val withTypeArgs: Term =
+      if typeArgs.isEmpty then selectedCtor
+      else TypeApply(selectedCtor, typeArgs.map(t => Inferred(t)))
+    Apply(withTypeArgs, concreteArgs)
 
-    def getAnnotationOf[AT <: Annotation: Type] =
-      val at = TypeRepr.of[AT]
-      symbol.expandedAnnotations.find(_.tpe <:< at).map(_.asExprOf[AT])
+  def expand(annot: Term): List[Term] =
+    if !(annot.tpe <:< aggregateTpe) then List(annot)
+    else
+      val cls = annot.tpe.typeSymbol
+      cls.declaredMethods.find(_.name == "aggregated") match
+        case None => List(annot)
+        case Some(aggMethod) =>
+          val valueParams = cls.primaryConstructor.paramSymss.flatten.filterNot(_.isType)
+          val (_, outerValueArgs) = collectArgs(annot)
+          val valueMap: Map[Symbol, Term] = valueParams.zip(outerValueArgs).toMap
+          val rawInner = aggMethod.annotations.filter(_.tpe <:< staticTpe)
+          rawInner.flatMap(inner => expand(rebuildAnnot(inner, valueMap)))
 
-  def expandAggregates(annots: List[Term]): List[Term] =
-    val aggregateTpe = TypeRepr.of[AnnotationAggregate]
-    val staticTpe = TypeRepr.of[StaticAnnotation]
+  annots.flatMap(expand)
 
-    def collectArgs(annot: Term): (List[TypeRepr], List[Term]) =
-      def loop(t: Term, vAcc: List[Term]): (List[TypeRepr], List[Term]) = t match
-        case Apply(fun, args) => loop(fun, args ++ vAcc)
-        case TypeApply(fun, tArgs) =>
-          val (_, vs) = loop(fun, vAcc)
-          (tArgs.map(_.tpe), vs)
-        case Select(New(tpt), _) => (tpt.tpe.typeArgs, vAcc)
-        case _ => (Nil, vAcc)
-      loop(annot, Nil)
+private[made] def metaTypeOf(using quotes: Quotes)(symbol: quotes.reflect.Symbol): Type[? <: Tuple] =
+  import quotes.reflect.*
 
-    def substituteRefs(term: Term, valueMap: Map[Symbol, Term]): Term =
-      val byName: Map[String, Term] = valueMap.map((sym, t) => sym.name -> t)
-      val tr = new TreeMap:
-        override def transformTerm(tree: Term)(owner: Symbol): Term = tree match
-          case id: Ident if byName.contains(id.name) => byName(id.name)
-          case Select(This(_), n) if byName.contains(n) => byName(n)
-          case other => super.transformTerm(other)(owner)
-      tr.transformTerm(term)(Symbol.spliceOwner)
+  val userAnnots = symbol.expandedAnnotations.iterator
+    .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
+    .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
 
-    def rebuildAnnot(inner: Term, valueMap: Map[Symbol, Term]): Term =
-      val annotCls = inner.tpe.typeSymbol
-      val ctor = annotCls.primaryConstructor
-      val (_, rawArgs) = collectArgs(inner)
-      val concreteArgs = rawArgs.map(substituteRefs(_, valueMap))
-      val classTpe = annotCls.typeRef
-      val newTree: Term = New(Inferred(classTpe))
-      val selectedCtor: Term = Select(newTree, ctor)
-      val typeArgs = inner.tpe.typeArgs
-      val withTypeArgs: Term =
-        if typeArgs.isEmpty then selectedCtor
-        else TypeApply(selectedCtor, typeArgs.map(t => Inferred(t)))
-      Apply(withTypeArgs, concreteArgs)
+  val syntheticAnnot = Option.when(isRepeatedCtorParam(symbol)):
+    val newRepeated: Term =
+      Apply(Select(New(Inferred(TypeRepr.of[repeated])), TypeRepr.of[repeated].typeSymbol.primaryConstructor), Nil)
+    AnnotatedType(TypeRepr.of[Meta], newRepeated).asType
+  traverseTypes(userAnnots.concat(syntheticAnnot).toList)
 
-    def expand(annot: Term): List[Term] =
-      if !(annot.tpe <:< aggregateTpe) then List(annot)
-      else
-        val cls = annot.tpe.typeSymbol
-        cls.declaredMethods.find(_.name == "aggregated") match
-          case None => List(annot)
-          case Some(aggMethod) =>
-            val valueParams = cls.primaryConstructor.paramSymss.flatten.filterNot(_.isType)
-            val (_, outerValueArgs) = collectArgs(annot)
-            val valueMap: Map[Symbol, Term] = valueParams.zip(outerValueArgs).toMap
-            val rawInner = aggMethod.annotations.filter(_.tpe <:< staticTpe)
-            rawInner.flatMap(inner => expand(rebuildAnnot(inner, valueMap)))
+private[made] def isRepeatedCtorParam(using quotes: Quotes)(symbol: quotes.reflect.Symbol): Boolean =
+  import quotes.reflect.*
+  symbol.flags.is(Flags.CaseAccessor) &&
+  symbol.owner.primaryConstructor.paramSymss.iterator.flatten
+    .find(_.name == symbol.name)
+    .map(_.tree)
+    .collect:
+      case ValDef(_, Annotated(_, annot), _) => annot.tpe
+    .exists: tpe =>
+      tpe <:< TypeRepr.of[scala.annotation.internal.Repeated]
 
-    annots.flatMap(expand)
+private[made] def metaSymbolsOf(using quotes: Quotes)(symbol: quotes.reflect.Symbol): List[quotes.reflect.Symbol] =
+  val ctorParam = for
+    owner <- List(symbol.maybeOwner)
+    if !owner.isNoSymbol
+    if owner.isClassDef
+    ctor = owner.primaryConstructor
+    if !ctor.isNoSymbol
+    ctorParam <- ctor.paramSymss.iterator.flatten.filterNot(_.isType).find(_.name == symbol.name)
+  yield ctorParam
+  symbol :: ctorParam
 
-  def metaTypeOf(symbol: Symbol): Type[? <: Tuple] =
-    val userAnnots = symbol.expandedAnnotations.iterator
-      .filter(_.tpe <:< TypeRepr.of[MetaAnnotation])
-      .map(annot => AnnotatedType(TypeRepr.of[Meta], annot).asType)
+// `methodMembers` (unlike `declaredMethods`) includes inherited-not-overridden members, but it
+// also pulls in members from universal/framework base types (Any/Object, and the synthetic
+// `Product`/`Equals`/`Enum` surface on case classes and enums: hashCode, equals, ==, canEqual,
+// productArity, productElement, ordinal, etc.). This method keeps only user-declared
+// val/def operations and drops that noise by owner + synthetic/artifact flags.
+extension (using quotes: Quotes)(tpe: quotes.reflect.TypeRepr)
+  def userDeclaredMembers: List[quotes.reflect.Symbol] =
+    import quotes.reflect.*
+    val excluding = Set(
+      defn.AnyClass,
+      defn.AnyValClass,
+      TypeRepr.of[Object].typeSymbol,
+      TypeRepr.of[Product].typeSymbol,
+      TypeRepr.of[Equals].typeSymbol,
+      TypeRepr.of[scala.reflect.Enum].typeSymbol,
+    )
+    tpe.typeSymbol.fieldMembers.iterator
+      .concat(tpe.typeSymbol.methodMembers)
+      .distinct
+      .filter: m =>
+        (m.isDefDef || m.isValDef) && !m.isClassConstructor && !m.flags.is(Flags.Synthetic) &&
+          !m.flags.is(Flags.Artifact) && !excluding.contains(m.owner)
+      .toList
+      .sortBy(_.pos.getOrElse(Position.ofMacroExpansion))
 
-    val syntheticAnnot = Option.when(isRepeatedCtorParam(symbol)):
-      AnnotatedType(TypeRepr.of[Meta], '{ new repeated }.asTerm).asType
-    traverseTypes(userAnnots.concat(syntheticAnnot).toList)
+private[made] def labelTypeOf(using quotes: Quotes)(sym: quotes.reflect.Symbol, fallback: String): Type[? <: String] =
+  val syms = Iterator(sym) ++ sym.allOverriddenSymbols
+  val res = syms.find(_.hasAnnotationOf[name]).flatMap(_.getAnnotationOf[name])
+  stringToType(res.flatMap(extractNameArg).getOrElse(fallback))
 
-  private def isRepeatedCtorParam(symbol: Symbol): Boolean = symbol.flags.is(Flags.CaseAccessor) &&
-    symbol.owner.primaryConstructor.paramSymss.iterator.flatten
-      .find(_.name == symbol.name)
-      .map(_.tree)
-      .collect:
-        case ValDef(_, Annotated(_, annot), _) => annot.tpe
-      .exists: tpe =>
-        tpe <:< TypeRepr.of[scala.annotation.internal.Repeated]
-
-  private def metaSymbolsOf(symbol: Symbol): List[Symbol] =
-    val ctorParam = for
-      owner <- List(symbol.maybeOwner)
-      if !owner.isNoSymbol
-      if owner.isClassDef
-      ctor = owner.primaryConstructor
-      if !ctor.isNoSymbol
-      ctorParam <- ctor.paramSymss.iterator.flatten.filterNot(_.isType).find(_.name == symbol.name)
-    yield ctorParam
-    symbol :: ctorParam
-
-  // `methodMembers` (unlike `declaredMethods`) includes inherited-not-overridden members, but it
-  // also pulls in members from universal/framework base types (Any/Object, and the synthetic
-  // `Product`/`Equals`/`Enum` surface on case classes and enums: hashCode, equals, ==, canEqual,
-  // productArity, productElement, ordinal, etc.). This method keeps only user-declared
-  // val/def operations and drops that noise by owner + synthetic/artifact flags.
-  extension (tpe: TypeRepr)
-    def userDeclaredMembers: List[Symbol] =
-      val excluding = Set(
-        defn.AnyClass,
-        defn.AnyValClass,
-        TypeRepr.of[Object].typeSymbol,
-        TypeRepr.of[Product].typeSymbol,
-        TypeRepr.of[Equals].typeSymbol,
-        TypeRepr.of[scala.reflect.Enum].typeSymbol,
-      )
-      tpe.typeSymbol.fieldMembers.iterator
-        .concat(tpe.typeSymbol.methodMembers)
-        .distinct
-        .filter: m =>
-          (m.isDefDef || m.isValDef) && !m.isClassConstructor && !m.flags.is(Flags.Synthetic) &&
-            !m.flags.is(Flags.Artifact) && !excluding.contains(m.owner)
-        .toList
-        .sortBy(_.pos.getOrElse(Position.ofMacroExpansion))
-
-  def labelTypeOf(sym: Symbol, fallback: String): Type[? <: String] =
-    val syms = Iterator(sym) ++ sym.allOverriddenSymbols
-    val res = syms.find(_.hasAnnotationOf[name]).flatMap(_.getAnnotationOf[name])
-    stringToType(res.flatMap(extractNameArg).getOrElse(fallback))
-
-  private def extractNameArg(annot: Expr[name]): Option[String] =
-    @tailrec def loop(stack: List[Term]): Option[String] = stack match
-      case Nil => None
-      case Literal(StringConstant(s)) :: _ => Some(s)
-      case Apply(fun, args) :: rest => loop(fun :: args ::: rest)
-      case TypeApply(fun, _) :: rest => loop(fun :: rest)
-      case _ :: rest => loop(rest)
-    loop(annot.asTerm :: Nil)
+private[made] def extractNameArg(using quotes: Quotes)(annot: Expr[name]): Option[String] =
+  import quotes.reflect.*
+  @tailrec def loop(stack: List[Term]): Option[String] = stack match
+    case Nil => None
+    case Literal(StringConstant(s)) :: _ => Some(s)
+    case Apply(fun, args) :: rest => loop(fun :: args ::: rest)
+    case TypeApply(fun, _) :: rest => loop(fun :: rest)
+    case _ :: rest => loop(rest)
+  loop(annot.asTerm :: Nil)
 
 private[made] given (quotes: Quotes) => Ordering[quotes.reflect.Position] =
   Ordering.by(pos => (pos.sourceFile.path, pos.start, pos.end))
+
+extension (companion: Expr.type)
+  // todo: remove when fixed on commons
+  private[made] def ofRefinedTupleFixed(exprs: List[Expr[?]])(using Quotes): Expr[Tuple] =
+    import quotes.reflect.*
+    exprs match
+      case Nil => '{ EmptyTuple: EmptyTuple }
+      case _ =>
+        val tpe = exprs.foldRight(TypeRepr.of[EmptyTuple]): (e, acc) =>
+          TypeRepr.of[*:].appliedTo(List(e.asTerm.tpe.widenTermRefByName, acc))
+        tpe.asType match
+          case '[type t <: Tuple; t] => '{ Tuple.fromArray(Array(${ Varargs[Any](exprs) }*)).asInstanceOf[t] }
+
 // $COVERAGE-ON$

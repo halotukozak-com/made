@@ -184,6 +184,10 @@ sealed trait InputElem:
   /** Path-dependent evidence that [[Metadata]] is a tuple of `Meta` entries. */
   inline given Metadata containsOnly Meta = containsOnly.refl
 
+// workaround for https://github.com/scala/scala3/issues/25245
+private sealed trait InputElemWorkaround[T] extends InputElem:
+  final type Type = T
+
 object InputElem:
   type Of[T] = InputElem { type Type = T }
   type LabelOf[l <: String] = InputElem { type Label = l }
@@ -195,6 +199,10 @@ object InputElem:
 
 object Done:
   type Of[T] = Done { type Type = T }
+
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait DoneWorkaround[T] extends Done:
+    final type Type = T
 
   /**
    * Maps a tuple of [[DoneOperation]]s to the corresponding tuple of handler function types.
@@ -237,14 +245,13 @@ object Done:
   transparent inline given derived[T]: Done.Of[T] = ${ derivedImpl[T] }
 
   // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait DoneOperationWorkaround[Outer] extends DoneOperation:
+  private sealed trait DoneOperationWorkaround[Outer, Out] extends DoneOperation:
     final type OuterType = Outer
+    final type OutputType = Out
 
   // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] =
     import quotes.reflect.*
-    val utils = new MacroUtils[quotes.type]
-    import utils.*
 
     val tTpe = TypeRepr.of[T]
     val tSymbol = tTpe.typeSymbol
@@ -270,6 +277,7 @@ object Done:
       memberTpe: TypeRepr,
       outer: Expr[T],
       args: Expr[Tuple],
+    )(using Quotes,
     ): Expr[Out] =
       def go(tpe: TypeRepr, idx: Int): List[List[Term]] = tpe match
         case MethodType(_, paramTypes, result) =>
@@ -306,10 +314,16 @@ object Done:
                     '[type paramMeta <: Tuple; paramMeta],
                   ) =>
                 '{
-                  new InputElem:
-                    override type Type = inputTpe
+                  new InputElemWorkaround[inputTpe]:
                     override type Label = inputLabel
                     override type Metadata = paramMeta
+                  .asInstanceOf[
+                    InputElem {
+                      type Type = inputTpe
+                      type Label = inputLabel
+                      type Metadata = paramMeta
+                    },
+                  ]
                 }
               case (_, _, _) => wontHappen
         // Per-param-list arities (term params only). `paramSymss` is `Nil` for no-parens
@@ -328,7 +342,7 @@ object Done:
           labelTypeOf(member, member.name),
           metaTypeOf(member),
           outputTpe,
-          Expr.ofRefinedTuple(inputElems),
+          Expr.ofRefinedTupleFixed(inputElems),
           paramListsType,
         ).runtimeChecked match
           case (
@@ -342,74 +356,77 @@ object Done:
             params match
               case Nil =>
                 '{
-                  new DoneOperationWorkaround[T] with DoneOperation.EmptyApply:
+                  new DoneOperationWorkaround[T, outputTpe] with DoneOperation.EmptyApply:
                     override type Label = opLabel
                     override type Metadata = opMeta
                     override type InputElems = inputElems
                     override type ParamLists = paramLists
-                    override type OutputType = outputTpe
 
                     override val inputElems: InputElems = $inputElemsExpr
                     override def apply(outer: T, args: Args): outputTpe =
                       ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  : DoneOperation.EmptyApply {
-                    type Label = opLabel
-                    type Metadata = opMeta
-                    type InputElems = inputElems
-                    type ParamLists = paramLists
-                    type OuterType = T
-                    type OutputType = outputTpe
-                  }
+                  .asInstanceOf[
+                    DoneOperation.EmptyApply {
+                      type Label = opLabel
+                      type Metadata = opMeta
+                      type InputElems = inputElems
+                      type ParamLists = paramLists
+                      type OuterType = T
+                      type OutputType = outputTpe
+                    },
+                  ]
                 }
               case (_, '[argT]) :: Nil =>
                 '{
-                  new DoneOperationWorkaround[T] with DoneOperation.SingleApply:
+                  new DoneOperationWorkaround[T, outputTpe] with DoneOperation.SingleApply:
                     override type Label = opLabel
                     override type Metadata = opMeta
                     override type InputElems = inputElems
                     override type ParamLists = paramLists
-                    override type OutputType = outputTpe
                     override type Arg = argT
 
                     override val inputElems: InputElems = $inputElemsExpr
                     override def apply(outer: T, args: Args): outputTpe =
                       ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  : DoneOperation.SingleApply {
-                    type Label = opLabel
-                    type Metadata = opMeta
-                    type InputElems = inputElems
-                    type ParamLists = paramLists
-                    type OuterType = T
-                    type OutputType = outputTpe
-                    type Arg = argT
-                  }
+                  .asInstanceOf[
+                    DoneOperation.SingleApply {
+                      type Label = opLabel
+                      type Metadata = opMeta
+                      type InputElems = inputElems
+                      type ParamLists = paramLists
+                      type OuterType = T
+                      type OutputType = outputTpe
+                      type Arg = argT
+                    },
+                  ]
                 }
               case _ =>
                 '{
-                  new DoneOperationWorkaround[T]:
+                  new DoneOperationWorkaround[T, outputTpe]:
                     override type Label = opLabel
                     override type Metadata = opMeta
                     override type InputElems = inputElems
                     override type ParamLists = paramLists
-                    override type OutputType = outputTpe
 
                     override val inputElems: InputElems = $inputElemsExpr
                     override def apply(outer: T, args: Args): outputTpe =
                       ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  : DoneOperation {
-                    type Label = opLabel
-                    type Metadata = opMeta
-                    type InputElems = inputElems
-                    type ParamLists = paramLists
-                    type OuterType = T
-                    type OutputType = outputTpe
-                  }
+                  .asInstanceOf[
+                    DoneOperation {
+                      type Label = opLabel
+                      type Metadata = opMeta
+                      type InputElems = inputElems
+                      type ParamLists = paramLists
+                      type OuterType = T
+                      type OutputType = outputTpe
+                    },
+                  ]
                 }
 
     (
       labelTypeOf(tSymbol, nameOf[T]),
       metaTypeOf(tSymbol),
-      Expr.ofRefinedTuple(operations),
+      Expr.ofRefinedTupleFixed(operations),
     ).runtimeChecked match
       case (
             '[type label <: String; label],
@@ -417,13 +434,19 @@ object Done:
             '{ type operations <: Tuple; $operationsExpr: operations },
           ) =>
         '{
-          new Done:
-            override type Type = T
+          new DoneWorkaround[T]:
             override type Label = label
             override type Metadata = meta
             override type Operations = operations
 
             override val operations: Operations = $operationsExpr
+          .asInstanceOf[
+            Done.Of[T] {
+              type Label = label
+              type Metadata = meta
+              type Operations = operations
+            },
+          ]
         }
 // $COVERAGE-ON$
 
@@ -459,9 +482,6 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
 )(using quotes: Quotes,
 ): Expr[Target] =
   import quotes.reflect.*
-  val utils = new MacroUtils[quotes.type]
-  import utils.*
-
   val tTpe = TypeRepr.of[Target]
   val members = tTpe.userDeclaredMembers
   val targetSymbol = tTpe.typeSymbol
@@ -527,12 +547,12 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     val value: Expr[Any] = '{ $handlers.productElement(${ Expr(index) }) }
     (argsTpe, outTpe) match
       case (None, '[Unit]) =>
-        '{ $value.asInstanceOf[() => Any].apply() }
+        '{ $value.asInstanceOf[() => Any].apply(): Unit }
       case (None, '[o]) =>
         '{ $value.asInstanceOf[() => o].apply() }
       case (Some('[a]), '[Unit]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
-        '{ $value.asInstanceOf[a => Any].apply($argsTuple) }
+        '{ $value.asInstanceOf[a => Any].apply($argsTuple): Unit }
       case (Some('[a]), '[o]) =>
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
         '{ $value.asInstanceOf[a => o].apply($argsTuple) }
