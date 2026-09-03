@@ -316,6 +316,13 @@ object Done:
                   new InputElemWorkaround[inputTpe]:
                     override type Label = inputLabel
                     override type Metadata = paramMeta
+                  .asInstanceOf[
+                    InputElem {
+                      type Type = inputTpe
+                      type Label = inputLabel
+                      type Metadata = paramMeta
+                    },
+                  ]
                 }
               case (_, _, _) => wontHappen
         // Per-param-list arities (term params only). `paramSymss` is `Nil` for no-parens
@@ -357,14 +364,16 @@ object Done:
                     override val inputElems: InputElems = $inputElemsExpr
                     override def apply(outer: T, args: Args): outputTpe =
                       ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  : DoneOperation.EmptyApply {
-                    type Label = opLabel
-                    type Metadata = opMeta
-                    type InputElems = inputElems
-                    type ParamLists = paramLists
-                    type OuterType = T
-                    type OutputType = outputTpe
-                  }
+                  .asInstanceOf[
+                    DoneOperation.EmptyApply {
+                      type Label = opLabel
+                      type Metadata = opMeta
+                      type InputElems = inputElems
+                      type ParamLists = paramLists
+                      type OuterType = T
+                      type OutputType = outputTpe
+                    },
+                  ]
                 }
               case (_, '[argT]) :: Nil =>
                 '{
@@ -378,15 +387,17 @@ object Done:
                     override val inputElems: InputElems = $inputElemsExpr
                     override def apply(outer: T, args: Args): outputTpe =
                       ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  : DoneOperation.SingleApply {
-                    type Label = opLabel
-                    type Metadata = opMeta
-                    type InputElems = inputElems
-                    type ParamLists = paramLists
-                    type OuterType = T
-                    type OutputType = outputTpe
-                    type Arg = argT
-                  }
+                  .asInstanceOf[
+                    DoneOperation.SingleApply {
+                      type Label = opLabel
+                      type Metadata = opMeta
+                      type InputElems = inputElems
+                      type ParamLists = paramLists
+                      type OuterType = T
+                      type OutputType = outputTpe
+                      type Arg = argT
+                    },
+                  ]
                 }
               case _ =>
                 '{
@@ -399,14 +410,16 @@ object Done:
                     override val inputElems: InputElems = $inputElemsExpr
                     override def apply(outer: T, args: Args): outputTpe =
                       ${ invokeExpr[outputTpe](member, opTpe, '{ outer }, '{ args.asInstanceOf[Tuple] }) }
-                  : DoneOperation {
-                    type Label = opLabel
-                    type Metadata = opMeta
-                    type InputElems = inputElems
-                    type ParamLists = paramLists
-                    type OuterType = T
-                    type OutputType = outputTpe
-                  }
+                  .asInstanceOf[
+                    DoneOperation {
+                      type Label = opLabel
+                      type Metadata = opMeta
+                      type InputElems = inputElems
+                      type ParamLists = paramLists
+                      type OuterType = T
+                      type OutputType = outputTpe
+                    },
+                  ]
                 }
 
     (
@@ -426,6 +439,13 @@ object Done:
             override type Operations = operations
 
             override val operations: Operations = $operationsExpr
+          .asInstanceOf[
+            Done.Of[T] {
+              type Label = label
+              type Metadata = meta
+              type Operations = operations
+            },
+          ]
         }
 // $COVERAGE-ON$
 

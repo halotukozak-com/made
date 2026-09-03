@@ -535,13 +535,15 @@ object Made:
 
                   type Companion = companion
                   val companion: Companion = $companionExpr
-                : Made.ProductOf[T] {
-                  type Label = label
-                  type Metadata = meta
-                  type Elems = madeFieldElem *: EmptyTuple
-                  type GeneratedElems = generatedElems
-                  type Companion = companion
-                }
+                .asInstanceOf[
+                  Made.ProductOf[T] {
+                    type Label = label
+                    type Metadata = meta
+                    type Elems = madeFieldElem *: EmptyTuple
+                    type GeneratedElems = generatedElems
+                    type Companion = companion
+                  },
+                ]
               }
         }
 
@@ -666,13 +668,15 @@ object Made:
 
                     type Companion = companion
                     val companion: Companion = $companionExpr
-                  : Made.ProductOf[T] {
-                    type Label = label
-                    type Metadata = meta
-                    type Elems = mirroredElems
-                    type GeneratedElems = generatedElems
-                    type Companion = companion
-                  }
+                  .asInstanceOf[
+                    Made.ProductOf[T] {
+                      type Label = label
+                      type Metadata = meta
+                      type Elems = mirroredElems
+                      type GeneratedElems = generatedElems
+                      type Companion = companion
+                    },
+                  ]
                 }
         }
 
@@ -700,11 +704,25 @@ object Made:
                               type Metadata = meta
 
                               def value: s = singleValueOf[s]
+                            .asInstanceOf[
+                              MadeSubSingletonElem {
+                                type Type = s
+                                type Label = elemLabel
+                                type Metadata = meta
+                              },
+                            ]
                           }
                         case '[s] =>
                           '{
                             new MadeSubElemWorkaround[subType, elemLabel]:
                               type Metadata = meta
+                            .asInstanceOf[
+                              MadeSubElem {
+                                type Type = subType
+                                type Label = elemLabel
+                                type Metadata = meta
+                              },
+                            ]
                           }
                       (exprs :+ expr, names :+ (typeToString[elemLabel], subSymbol.name))
                 case _ => wontHappen
@@ -726,13 +744,15 @@ object Made:
 
                     type Companion = companion
                     val companion: Companion = $companionExpr
-                  : Made.SumOf[T] {
-                    type Label = label
-                    type Metadata = meta
-                    type Elems = mirroredElems
-                    type GeneratedElems = generatedElems
-                    type Companion = companion
-                  }
+                  .asInstanceOf[
+                    Made.SumOf[T] {
+                      type Label = label
+                      type Metadata = meta
+                      type Elems = mirroredElems
+                      type GeneratedElems = generatedElems
+                      type Companion = companion
+                    },
+                  ]
                 }
               case '{ $_ : x } => report.errorAndAbort(s"Unexpected Mirror type: ${Type.show[x]}")
 
