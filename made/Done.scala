@@ -237,11 +237,6 @@ object Done:
    */
   transparent inline given derived[T]: Done.Of[T] = ${ derivedImpl[T] }
 
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait DoneOperationWorkaround[Outer, Out] extends DoneOperation:
-    final type OuterType = Outer
-    final type OutputType = Out
-
   // $COVERAGE-OFF$
   private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] =
     import quotes.reflect.*
@@ -404,13 +399,7 @@ object Done:
             '{ type operations <: Tuple; $operationsExpr: operations },
           ) =>
         '{
-          new DoneWorkaround[T]:
-            override type Label = label
-            override type Metadata = meta
-            override type Operations = operations
-
-            override val operations: Operations = $operationsExpr
-          .asInstanceOf[
+          new DoneImpl[T, label, meta, operations]($operationsExpr).asInstanceOf[
             Done.Of[T] {
               type Label = label
               type Metadata = meta
@@ -541,6 +530,12 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
 // $COVERAGE-ON$
 
 private object InputElemImpl extends InputElem
+
+private final class DoneImpl[T, L <: String, M <: Tuple, Ops <: Tuple](val operations: Ops) extends Done:
+  type Type = T
+  type Label = L
+  type Metadata = M
+  type Operations = Ops
 
 private final class DoneOperationImpl[Outer, Out, IE <: Tuple](val inputElems: IE, invoke: (Outer, Tuple) => Out)
   extends DoneOperation:

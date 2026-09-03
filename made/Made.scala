@@ -198,11 +198,6 @@ sealed trait MadeSubElem extends MadeElem
 object MadeSubElem:
   type Of[T] = MadeSubElem { type Type = T }
 
-// workaround for https://github.com/scala/scala3/issues/25245
-private sealed trait MadeSubElemWorkaround[T, L <: String] extends MadeSubElem:
-  final type Type = T
-  final type Label = L
-
 /**
  * Element representing a singleton subtype in a sum type mirror.
  *
@@ -220,11 +215,6 @@ sealed trait MadeSubSingletonElem extends MadeSubElem:
 
 object MadeSubSingletonElem:
   type Of[T] = MadeSubSingletonElem { type Type = T }
-
-// workaround for https://github.com/scala/scala3/issues/25245
-private sealed trait MadeSubSingletonElemWorkaround[T, L <: String] extends MadeSubSingletonElem:
-  final type Type = T
-  final type Label = L
 
 /**
  * Element representing a [[generated]] val or def.
@@ -713,10 +703,6 @@ object Made:
     /** A product's [[Elems]] are all [[MadeFieldElem]]s; refines the base `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeFieldElem = containsOnly.refl
 
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait ProductWorkaround[T] extends Made.Product:
-    final type Type = T
-
   /**
    * Mirror for sum types (sealed traits and enums).
    *
@@ -738,10 +724,6 @@ object Made:
     /** A sum's [[Elems]] are all [[MadeSubElem]]s; refines the base `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeSubElem = containsOnly.refl
 
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait SumWorkaround[T] extends Made.Sum:
-    final type Type = T
-
   /**
    * Mirror for singleton types (objects and Unit).
    *
@@ -761,11 +743,6 @@ object Made:
     /** Returns the singleton instance. */
     def value: Type
     final def elems: Elems = EmptyTuple
-
-  // workaround for https://github.com/scala/scala3/issues/25245
-  private sealed trait SingletonWorkaround[T, L <: String] extends Made.Singleton:
-    final type Type = T
-    final type Label = L
 
   /**
    * Mirror for transparent wrapper types (single-field case classes
