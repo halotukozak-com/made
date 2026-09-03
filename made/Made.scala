@@ -203,6 +203,11 @@ sealed trait MadeSubElem extends MadeElem
 object MadeSubElem:
   type Of[T] = MadeSubElem { type Type = T }
 
+// workaround for https://github.com/scala/scala3/issues/25245
+private sealed trait MadeSubElemWorkaround[T, L <: String] extends MadeSubElem:
+  final type Type = T
+  final type Label = L
+
 /**
  * Element representing a singleton subtype in a sum type mirror.
  *
@@ -220,6 +225,11 @@ sealed trait MadeSubSingletonElem extends MadeSubElem:
 
 object MadeSubSingletonElem:
   type Of[T] = MadeSubSingletonElem { type Type = T }
+
+// workaround for https://github.com/scala/scala3/issues/25245
+private sealed trait MadeSubSingletonElemWorkaround[T, L <: String] extends MadeSubSingletonElem:
+  final type Type = T
+  final type Label = L
 
 /**
  * Element representing a [[generated]] val or def.
@@ -396,7 +406,7 @@ object Made:
               case args => ref.appliedToTypes(args)
             applied.asExprOf[E]
 
-      fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue getOrElse '{ NotExists }
+      fromWhenAbsent.orElse(fromOptionalParam).orElse(fromDefaultValue).getOrElse('{ NotExists })
 
     def newTFrom(args: List[Expr[?]]): Expr[T] =
       New(TypeTree.of[T])
@@ -422,9 +432,7 @@ object Made:
           Type.of[T] match
             case '[type s <: scala.Singleton; s] =>
               '{
-                new Made.Singleton:
-                  type Type = s
-                  type Label = label
+                new SingletonWorkaround[s, label]:
                   type Metadata = meta
                   type GeneratedElems = generatedElems
 
@@ -444,9 +452,7 @@ object Made:
               }
             case '[Unit] =>
               '{
-                new Made.Singleton:
-                  type Type = Unit
-                  type Label = label
+                new SingletonWorkaround[Unit, label]:
                   type Metadata = meta
                   type GeneratedElems = generatedElems
 
@@ -512,9 +518,8 @@ object Made:
                   $madeFieldExpr: madeFieldElem
                 } =>
               '{
-                new Made.Product:
+                new ProductWorkaround[T]:
                   type Label = label
-                  type Type = T
                   type Metadata = meta
 
                   type Elems = madeFieldElem *: EmptyTuple
@@ -647,8 +652,7 @@ object Made:
             Expr.ofRefinedTuple(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
-                  new Made.Product:
-                    type Type = T
+                  new ProductWorkaround[T]:
                     type Label = label
                     type Metadata = meta
                     type Elems = mirroredElems
@@ -692,18 +696,14 @@ object Made:
                       val expr = Type.of[subType] match
                         case '[type s <: scala.Singleton; s] =>
                           '{
-                            new MadeSubSingletonElem:
-                              type Type = s
-                              type Label = elemLabel
+                            new MadeSubSingletonElemWorkaround[s, elemLabel]:
                               type Metadata = meta
 
                               def value: s = singleValueOf[s]
                           }
                         case '[s] =>
                           '{
-                            new MadeSubElem:
-                              type Type = subType
-                              type Label = elemLabel
+                            new MadeSubElemWorkaround[subType, elemLabel]:
                               type Metadata = meta
                           }
                       (exprs :+ expr, names :+ (typeToString[elemLabel], subSymbol.name))
@@ -714,8 +714,7 @@ object Made:
             Expr.ofRefinedTuple(exprs.toList) match
               case '{ type mirroredElems <: Tuple; $mirroredElemsExpr: mirroredElems } =>
                 '{
-                  new Made.Sum:
-                    type Type = T
+                  new SumWorkaround[T]:
                     type Label = label
                     type Metadata = meta
                     type Elems = mirroredElems
@@ -740,8 +739,12 @@ object Made:
           case x => report.errorAndAbort(s"Unexpected Mirror type: ${x.show}")
         }
 
-        deriveSingleton orElse deriveTransparent orElse deriveValueClass orElse deriveProduct orElse
-          deriveSum getOrElse:
+        deriveSingleton
+          .orElse(deriveTransparent)
+          .orElse(deriveValueClass)
+          .orElse(deriveProduct)
+          .orElse(deriveSum)
+          .getOrElse:
             report.errorAndAbort(s"Unsupported Mirror type for ${tTpe.show}")
   // $COVERAGE-ON$
 
@@ -772,6 +775,10 @@ object Made:
     /** A product's [[Elems]] are all [[MadeFieldElem]]s; refines the base `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeFieldElem = containsOnly.refl
 
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait ProductWorkaround[T] extends Made.Product:
+    final type Type = T
+
   /**
    * Mirror for sum types (sealed traits and enums).
    *
@@ -793,6 +800,10 @@ object Made:
     /** A sum's [[Elems]] are all [[MadeSubElem]]s; refines the base `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeSubElem = containsOnly.refl
 
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait SumWorkaround[T] extends Made.Sum:
+    final type Type = T
+
   /**
    * Mirror for singleton types (objects and Unit).
    *
@@ -812,6 +823,11 @@ object Made:
     /** Returns the singleton instance. */
     def value: Type
     final def elems: Elems = EmptyTuple
+
+  // workaround for https://github.com/scala/scala3/issues/25245
+  private sealed trait SingletonWorkaround[T, L <: String] extends Made.Singleton:
+    final type Type = T
+    final type Label = L
 
   /**
    * Mirror for transparent wrapper types (single-field case classes

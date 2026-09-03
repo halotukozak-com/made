@@ -420,8 +420,7 @@ object Done:
             '{ type operations <: Tuple; $operationsExpr: operations },
           ) =>
         '{
-          new Done:
-            override type Type = T
+          new DoneWorkaround[T]:
             override type Label = label
             override type Metadata = meta
             override type Operations = operations
