@@ -776,11 +776,12 @@ object Made:
     /** A transparent type's single [[Elems]] entry is a [[MadeFieldElem]]; refines `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeFieldElem = containsOnly.refl
 
-private final class FieldElemImpl[Outer, Elem](getter: Outer => Elem, elemDefault: Elem | NotExists)
+private final class FieldElemImpl[Outer, Elem](getter: Outer => Elem, elemDefault: => Elem | NotExists)
   extends MadeFieldElem:
   type OuterType = Outer
   type Type = Elem
   def apply(outer: Outer): Elem = getter(outer)
+  // by-name: a mutable default (e.g. `mutable.Set.empty`) must yield a fresh instance on every access.
   def default: Elem | NotExists = elemDefault
 
 private object SubElemImpl extends MadeSubElem

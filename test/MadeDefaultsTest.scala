@@ -191,6 +191,17 @@ class MadeDefaultsTest extends munit.FunSuite:
     assertEquals(x.default, CustomOpt("none"))
   }
 
+  test("mutable default is fresh on every access, not shared") {
+    val m = Made.derived[WithMutableDefault]
+    val x *: EmptyTuple = m.elems
+
+    val first = x.default.asInstanceOf[scala.collection.mutable.Set[String]]
+    first += "a"
+    val second = x.default.asInstanceOf[scala.collection.mutable.Set[String]]
+
+    assert(second.isEmpty, s"expected a fresh Set, but got one polluted by a previous .default call: $second")
+  }
+
 case class WithDefaults(x: Int, y: String = "hello", z: Boolean = true)
 case class AllDefaults(a: Int = 1, b: String = "test")
 case class MixedDefaults(required: Int, optional: String = "default")
@@ -222,6 +233,7 @@ object RecWithDefault:
 object RecWithScalaDefault:
   case class Node(value: Int, next: Option[Node] = None)
 
+case class WithMutableDefault(functions: scala.collection.mutable.Set[String] = scala.collection.mutable.Set.empty)
 case class GenericWithDefault[T](a: T, label: String = "default")
 case class GenericPair[T](a: T, b: Option[T] = None)
 case class GenericWhenAbsent[T](a: T, @whenAbsent("annotated") b: String = "default")
