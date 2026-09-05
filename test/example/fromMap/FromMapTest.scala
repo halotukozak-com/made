@@ -14,6 +14,12 @@ class FromMapTest extends munit.FunSuite:
     assert(bob == User("Bob", 25, Some("Cracow")))
   }
 
+  test("missing required field with no default throws") {
+    intercept[IllegalArgumentException] {
+      summon[FromMap[User]].fromMap(Map("age" -> 30))
+    }
+  }
+
   type Bill = (amount: Double, tip: Double)
 
   test("named tuple") {

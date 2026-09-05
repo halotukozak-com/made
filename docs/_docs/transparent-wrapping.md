@@ -5,8 +5,8 @@ order: 2
 
 # Transparent Wrapping
 
-This guide explains how Made handles transparent wrapper types - single-field case classes annotated with `@transparent`
-that act as newtypes around an underlying value. Made derives a `Made.Transparent` mirror for these types instead of the
+This guide explains how M&DE handles transparent wrapper types - single-field case classes annotated with `@transparent`
+that act as newtypes around an underlying value. M&DE derives a `Made.Transparent` mirror for these types instead of the
 usual `Made.Product`, providing `unwrap` and `wrap` methods for bidirectional conversion between the wrapper and its
 inner type.
 
@@ -20,7 +20,7 @@ This guide assumes familiarity with Made mirrors and the type class derivation p
 ## Defining a Transparent Type
 
 A transparent type is a case class with exactly one constructor field, annotated with `@transparent`. The annotation
-tells Made to produce a `Made.Transparent` mirror instead of `Made.Product`.
+tells M&DE to produce a `Made.Transparent` mirror instead of `Made.Product`.
 
 ```scala
 import halotukozak.made.annotation.transparent

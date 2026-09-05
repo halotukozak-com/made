@@ -5,14 +5,14 @@ order: 4
 
 # Generated Members
 
-This guide explains how Made exposes non-constructor members - vals and defs annotated with `@generated` - through the
+This guide explains how M&DE exposes non-constructor members - vals and defs annotated with `@generated` - through the
 `GeneratedMadeElem` type and the `generatedElems` tuple. Standard `scala.deriving.Mirror` has no concept of
-non-constructor members. Made's `@generated` annotation marks vals and defs for inclusion in the mirror, making computed
+non-constructor members. M&DE's `@generated` annotation marks vals and defs for inclusion in the mirror, making computed
 and derived properties visible to derivation code alongside constructor fields.
 
 This matters for schema generators, API spec generators, documentation generators, and serializers that need to include
 computed fields. A JSON schema generator, for example, may want to expose a `fullName` computed from `firstName` and
-`lastName` as a read-only property in the schema output. With Made, the derivation can discover and access that computed
+`lastName` as a read-only property in the schema output. With M&DE, the derivation can discover and access that computed
 member through the same mirror it uses for constructor fields.
 
 This guide assumes you have read the [type class derivation guide](deriving-show.md) and understand Made mirrors,
@@ -20,7 +20,7 @@ This guide assumes you have read the [type class derivation guide](deriving-show
 
 ## The Two-Tuple Model
 
-Made keeps constructor elements and generated members in separate tuples. The `elems` method returns a tuple of
+M&DE keeps constructor elements and generated members in separate tuples. The `elems` method returns a tuple of
 `MadeFieldElem` (for products) or `MadeSubElem`/`MadeSubSingletonElem` (for sums), representing constructor parameters
 or subtypes. The `generatedElems` method returns a tuple of `GeneratedMadeElem`, representing vals and defs annotated
 with `@generated`.
