@@ -5,15 +5,15 @@ order: 5
 
 # Annotations and Metadata
 
-This guide covers how Made surfaces annotations through `Metadata`, how to define your own annotations via
+This guide covers how M&DE surfaces annotations through `Metadata`, how to define your own annotations via
 `MetaAnnotation`, how to rename types and fields with `@name`, and how to compose annotations with
-`AnnotationAggregate`. The guide assumes familiarity with the basic Made workflow from
+`AnnotationAggregate`. The guide assumes familiarity with the basic M&DE workflow from
 [Deriving Type Classes with Made](deriving-show.md).
 
 ## The Metadata Type Member
 
 Every `Made` mirror exposes a `type Metadata <: Tuple` carrying annotations declared on the mirrored type. Per-element
-metadata is carried by each `MadeElem` under the same `Metadata` type member. When no Made-aware annotations are
+metadata is carried by each `MadeElem` under the same `Metadata` type member. When no M&DE-aware annotations are
 present, `Metadata =:= EmptyTuple`.
 
 ```scala
@@ -61,13 +61,13 @@ annot match
   case a: JsonName => a.value                          // "user_name" — no Option, no .get
 ```
 
-`NotExists` is Made's single "not present" marker — the same one `MadeFieldElem.default` uses for an absent
+`NotExists` is M&DE's single "not present" marker — the same one `MadeFieldElem.default` uses for an absent
 default — rather than a second shape alongside `Option` or a bare `null`. `getAllAnnotations[A]`, which collects
 every annotation of type `A` on an element, stays `List[A]`, since a list already has a natural empty case.
 
 ## Defining Custom Annotations
 
-Annotations extending `MetaAnnotation` participate in Made's metadata. `MetaAnnotation` extends
+Annotations extending `MetaAnnotation` participate in M&DE's metadata. `MetaAnnotation` extends
 `scala.annotation.RefiningAnnotation`, so each annotation refines the type of the annotated element and survives
 into the mirror's `Metadata` tuple.
 

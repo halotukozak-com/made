@@ -15,7 +15,7 @@ compile time that carry:
 - **Transparent wrappers** — `@transparent` single-field case classes with compile-time wrap/unwrap
 - **Custom labels** — `@name` to override the label of a type or field
 
-Made supports case classes, enums, sealed traits, objects, value classes, and higher-kinded types.
+M&DE supports case classes, enums, sealed traits, objects, value classes, and higher-kinded types.
 
 ## Installation
 

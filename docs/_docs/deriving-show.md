@@ -10,7 +10,7 @@ to summon a Made mirror, iterate its runtime element objects, and wire up automa
 types, singletons, and transparent wrappers.
 
 The guide assumes familiarity with Scala 3's `scala.deriving.Mirror`. Where standard Mirror derivation relies on
-compile-time `summonInline` over `ElemTypes`, Made provides a different approach: runtime element objects
+compile-time `summonInline` over `ElemTypes`, M&DE provides a different approach: runtime element objects
 (`MadeFieldElem`, `MadeSubElem`, `MadeSubSingletonElem`) that carry labels, types, and metadata. This means your
 derivation logic iterates a concrete tuple of element objects rather than recursing over type-level tuples.
 
@@ -25,7 +25,7 @@ The examples throughout this guide use a small set of domain types. Product deri
 case class User(name: String, age: Int)
 ```
 
-The transparent wrapper example uses `Email`, a single-field case class annotated with `@transparent` so that Made
+The transparent wrapper example uses `Email`, a single-field case class annotated with `@transparent` so that M&DE
 derives a `Made.Transparent` mirror instead of `Made.Product`.
 
 ```scala 3 sc-name:email
@@ -78,7 +78,7 @@ object Show:
 
 ## Product Derivation
 
-Product derivation is the core Made pattern. Given a mirror for a product type `T`, you extract field labels and types
+Product derivation is the core M&DE pattern. Given a mirror for a product type `T`, you extract field labels and types
 at compile time, then zip them with the product's field values at runtime to build the string representation.
 
 The derivation function must be `inline` because extracting labels from Made's type-level `Label` and
@@ -117,7 +117,7 @@ The call to `compiletime.summonAll` maps the type-level element tuple `m.ElemTyp
 compile time. For `User`, this resolves `Show[String]` and `Show[Int]` from the primitive givens above. This eliminates
 any need to manually list field instances - the compiler handles it.
 
-The key Made-specific insight here is that `elems` gives you runtime `MadeFieldElem` objects. While this example
+The key M&DE-specific insight here is that `elems` gives you runtime `MadeFieldElem` objects. While this example
 uses `constValueTuple` for labels (same as standard Mirror), the runtime element objects become essential when you need
 metadata, defaults, or annotations - capabilities that standard Mirror lacks entirely.
 

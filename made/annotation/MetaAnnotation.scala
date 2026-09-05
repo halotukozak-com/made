@@ -2,7 +2,7 @@ package halotukozak.made.annotation
 import scala.annotation.RefiningAnnotation
 
 /**
- * Base class for all Made meta-annotations.
+ * Base class for all M&DE meta-annotations.
  *
  * Extends `RefiningAnnotation` so that annotations refine the type of the
  * annotated element. Annotations extending this class are automatically
@@ -11,7 +11,7 @@ import scala.annotation.RefiningAnnotation
  * extension methods on a `Made` instance.
  *
  * Custom annotations should extend this class to participate in the
- * Made metadata system.
+ * M&DE metadata system.
  *
  * @see [[halotukozak.made.Made]]
  * @see [[generated]]

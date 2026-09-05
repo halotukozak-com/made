@@ -17,9 +17,11 @@ object FromMap:
     val values = labels
       .zip(elems)
       .map: (label, elem) =>
-        source
-          .get(label)
-          .orElse(Option(elem.default))
-          .getOrElse(throw IllegalArgumentException(s"Missing key '$label' with no default"))
+        source.getOrElse(
+          label,
+          elem.default match
+            case NotExists => throw IllegalArgumentException(s"Missing key '$label' with no default")
+            case d => d,
+        )
 
     m.fromUnsafeArray(values.toArray)

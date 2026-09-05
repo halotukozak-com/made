@@ -22,7 +22,7 @@ import scala.quoted.*
  *   }
  * }}}
  *
- * Made's annotation lookup machinery (`hasAnnotation`/`getAnnotation` on mirror elements,
+ * M&DE's annotation lookup machinery (`hasAnnotation`/`getAnnotation` on mirror elements,
  * label resolution and metadata) automatically expands aggregates so that downstream code
  * sees the underlying annotations directly.
  */

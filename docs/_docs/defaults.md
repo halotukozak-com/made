@@ -5,12 +5,12 @@ order: 3
 
 # Default Values
 
-This guide explains how Made resolves default values for product fields during derivation. When you derive a type class
+This guide explains how M&DE resolves default values for product fields during derivation. When you derive a type class
 that constructs product instances from partial data - a JSON decoder, a config loader, a builder - you need to know
-which fields have fallback values and what those values are. Made makes this available through `MadeFieldElem.default`,
+which fields have fallback values and what those values are. M&DE makes this available through `MadeFieldElem.default`,
 a method on each field element that returns `Type | NotExists` resolved at compile time.
 
-The default value for each field is determined by a three-level priority chain. The Made macro inspects annotations and
+The default value for each field is determined by a three-level priority chain. The M&DE macro inspects annotations and
 constructor signatures at compile time, selects the highest-priority source, and bakes the result into the field
 element. At runtime, calling `.default` simply returns the pre-computed value (or `NotExists` if none is available) -
 there is no reflection or annotation processing at runtime.
@@ -20,7 +20,7 @@ This guide assumes you have read the [type class derivation guide](deriving-show
 
 ## The Priority Chain
 
-Made resolves default values using the following priority chain (first match wins):
+M&DE resolves default values using the following priority chain (first match wins):
 
 1. `@whenAbsent(value)` - explicit annotation default (highest priority)
 2. `@optionalParam` - uses the `Default[T]` type class to produce an empty value
@@ -100,12 +100,12 @@ assert(elem.default == 8080)
 
 ## @optionalParam and Default
 
-`@optionalParam` marks a field as optional. When Made encounters this annotation, it summons `Default[T]` at compile
+`@optionalParam` marks a field as optional. When M&DE encounters this annotation, it summons `Default[T]` at compile
 time to produce the empty value for that field's type. This sits at priority level 2 - below `@whenAbsent` but above
 constructor defaults.
 
 The `Default[O]` type class is the extension point. It extends `() => O`, so calling a `Default` instance produces the
-empty value. Made ships two built-in instances: `Default[Option[A]]` returns `None`, and `Default[A | Null]` returns
+empty value. M&DE ships two built-in instances: `Default[Option[A]]` returns `None`, and `Default[A | Null]` returns
 `null`.
 
 ```scala
@@ -151,7 +151,10 @@ type class that builds a `T` from a `Map[String, Any]`, falling back to `MadeFie
 
 The derivation function summons a `Made.Of[T]` mirror (which the `transparent inline given` resolves to `Made.Product`
 at the expansion site), extracts field labels via `constValueTuple`, and iterates the map to build an array of field
-values. When a key is absent, it uses `elem.default.getOrElse(throw ...)` to provide the fallback value.
+values. When a key is absent, it matches `elem.default` against `NotExists` to either fall back to the default value
+or throw. A naive `.orElse(Option(elem.default))` would be wrong here: `NotExists` is a `case object`, not `null`, so
+`Option(elem.default)` never produces `None` even when no default exists - the missing-key check would silently
+never fire.
 
 ```scala
 import halotukozak.made.*
@@ -173,10 +176,12 @@ object FromMap:
     val values = labels
       .zip(elems)
       .map: (label, elem) =>
-        source
-          .get(label)
-          .orElse(Option(elem.default))
-          .getOrElse(throw IllegalArgumentException(s"Missing key '$label' with no default"))
+        source.getOrElse(
+          label,
+          elem.default match
+            case NotExists => throw IllegalArgumentException(s"Missing key '$label' with no default")
+            case d => d,
+        )
 
     m.fromUnsafeArray(values.toArray)
 
