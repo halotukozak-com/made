@@ -4,7 +4,7 @@ import scala.annotation.{publicInBinary, Annotation}
 import scala.quoted.*
 import halotukozak.commons.*
 
-extension [M <: Tuple](self: { type Metadata = M })(using inline ev: M containsOnly Meta)
+extension [M <: Tuple](self: { type Metadata = M })(using inline ev: M containsOnly Meta) {
   /**
    * Returns `true` if the mirror's `Metadata` tuple contains an annotation of type `A`.
    *
@@ -34,6 +34,7 @@ extension [M <: Tuple](self: { type Metadata = M })(using inline ev: M containsO
    * [[halotukozak.made.annotation.MetaAnnotation]].
    */
   transparent inline def getAllAnnotations[A <: Annotation]: List[A] = ${ getAllAnnotationsImpl[A, M] }
+}
 
 extension [L <: String](l: { type Label = L })
   /**
@@ -47,7 +48,7 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
    */
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
-extension (es: Tuple)(using inline ev: es.type containsOnly { type Metadata <: Tuple })
+extension (es: Tuple)(using inline ev: es.type containsOnly { type Metadata <: Tuple }) {
   /**
    * Per-element [[hasAnnotation]] over a tuple whose entries each declare a `Metadata` type member
    * (e.g. a tuple of [[MadeElem]]s, [[GeneratedMadeElem]]s, or a singleton `Made` instance's
@@ -73,22 +74,24 @@ extension (es: Tuple)(using inline ev: es.type containsOnly { type Metadata <: T
    */
   transparent inline def getAnnotations[A <: Annotation]: Tuple.Map[es.type, [_] =>> A | NotExists] =
     ${ getAnnotationsImpl[es.type, A] }
+}
 
 // $COVERAGE-OFF$
-private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes): Option[Expr[A]] =
+private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes): Option[Expr[A]] = {
   import quotes.reflect.*
 
   traverseTupleType(Type.of[M]).iterator
     .map(TypeRepr.of(using _))
     .collectFirst:
       case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => annot.asExprOf[A]
+}
 
 @publicInBinary private def getAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using Quotes)
   : Expr[A | NotExists] =
   findAnnotationExpr[A, M].getOrElse('{ NotExists })
 
 @publicInBinary private def getAllAnnotationsImpl[A <: Annotation: Type, M <: Tuple: Type](using quotes: Quotes)
-  : Expr[List[A]] =
+  : Expr[List[A]] = {
   import quotes.reflect.*
 
   Expr.ofList:
@@ -97,6 +100,7 @@ private def findAnnotationExpr[A <: Annotation: Type, M <: Tuple: Type](using qu
       .collect:
         case AnnotatedType(_, annot) if annot.tpe <:< TypeRepr.of[A] => annot.asExprOf[A]
       .toList
+}
 
 @publicInBinary private def hasAnnotationImpl[A <: Annotation: Type, M <: Tuple: Type](using Quotes): Expr[Boolean] =
   Expr(findAnnotationExpr[A, M].isDefined)

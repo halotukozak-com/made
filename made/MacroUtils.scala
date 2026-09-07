@@ -64,7 +64,7 @@ private[made] def reportOnDuplicates(labels: Seq[(label: String, original: Strin
     .foreach: (label, originals) =>
       if originals.sizeIs > 1 then report.error(s"${originals.mkString(", ")} have the same @name: $label")
 
-extension (using quotes: Quotes)(symbol: quotes.reflect.Symbol)
+extension (using quotes: Quotes)(symbol: quotes.reflect.Symbol) {
   /**
    * Symbols whose annotations are considered to "belong" to this symbol: the symbol itself,
    * the matching constructor parameter of its owning class (for case class accessors), and all
@@ -90,8 +90,9 @@ extension (using quotes: Quotes)(symbol: quotes.reflect.Symbol)
   def getAnnotationOf[AT <: Annotation: Type] =
     val at = quotes.reflect.TypeRepr.of[AT]
     symbol.expandedAnnotations.find(_.tpe <:< at).map(_.asExprOf[AT])
+}
 
-private[made] def expandAggregates(using quotes: Quotes)(annots: List[quotes.reflect.Term]): List[quotes.reflect.Term] =
+private[made] def expandAggregates(using quotes: Quotes)(annots: List[quotes.reflect.Term]): List[quotes.reflect.Term] = {
   import quotes.reflect.*
 
   val aggregateTpe = TypeRepr.of[AnnotationAggregate]
@@ -144,8 +145,9 @@ private[made] def expandAggregates(using quotes: Quotes)(annots: List[quotes.ref
           rawInner.flatMap(inner => expand(rebuildAnnot(inner, valueMap)))
 
   annots.flatMap(expand)
+}
 
-private[made] def metaTypeOf(using quotes: Quotes)(symbol: quotes.reflect.Symbol): Type[? <: Tuple] =
+private[made] def metaTypeOf(using quotes: Quotes)(symbol: quotes.reflect.Symbol): Type[? <: Tuple] = {
   import quotes.reflect.*
 
   val userAnnots = symbol.expandedAnnotations.iterator
@@ -157,6 +159,7 @@ private[made] def metaTypeOf(using quotes: Quotes)(symbol: quotes.reflect.Symbol
       Apply(Select(New(Inferred(TypeRepr.of[repeated])), TypeRepr.of[repeated].typeSymbol.primaryConstructor), Nil)
     AnnotatedType(TypeRepr.of[Meta], newRepeated).asType
   traverseTypes(userAnnots.concat(syntheticAnnot).toList)
+}
 
 private[made] def isRepeatedCtorParam(using quotes: Quotes)(symbol: quotes.reflect.Symbol): Boolean =
   import quotes.reflect.*

@@ -296,7 +296,7 @@ object Made:
   transparent inline given derived[T]: Of[T] = ${ derivedImpl[T] }
 
   // $COVERAGE-OFF$
-  private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] =
+  private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] = {
     import quotes.reflect.*
 
     // dealiasKeepOpaques unfolds transparent aliases (e.g. `type AliasFoo = Foo`) so that
@@ -321,22 +321,20 @@ object Made:
             s"@generated cannot be applied to methods with parameters: ${member.name}",
             member.pos.getOrElse(tSymbol.pos.getOrElse(Position.ofMacroExpansion)),
           )
-    yield
-      val elemTpe = tTpe.memberType(member).widen
-
-      (elemTpe.asType, labelTypeOf(member, member.name), metaTypeOf(member)).runtimeChecked match
-        case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
-          '{
-            new GeneratedFieldElemImpl[T, elemTpe](outer => ${ '{ outer }.asTerm.select(member).asExprOf[elemTpe] })
-              .asInstanceOf[
-                GeneratedMadeElem {
-                  type Type = elemTpe
-                  type Label = elemLabel
-                  type Metadata = meta
-                  type OuterType = T
-                },
-              ]
-          }
+      elemTpe = tTpe.memberType(member).widen
+    yield (elemTpe.asType, labelTypeOf(member, member.name), metaTypeOf(member)).runtimeChecked match
+      case ('[elemTpe], '[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
+        '{
+          new GeneratedFieldElemImpl[T, elemTpe](outer => ${ '{ outer }.asTerm.select(member).asExprOf[elemTpe] })
+            .asInstanceOf[
+              GeneratedMadeElem {
+                type Type = elemTpe
+                type Label = elemLabel
+                type Metadata = meta
+                type OuterType = T
+              },
+            ]
+        }
 
     def singleCaseFieldOf(symbol: Symbol): Symbol = symbol.caseFields match
       case field :: Nil => field
@@ -359,7 +357,7 @@ object Made:
             ]
           }
 
-    def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[E | NotExists] =
+    def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[E | NotExists] = {
       def fromWhenAbsent = symbol
         .getAnnotationOf[whenAbsent[?]]
         .map:
@@ -385,6 +383,7 @@ object Made:
             applied.asExprOf[E]
 
       fromWhenAbsent.orElse(fromOptionalParam).orElse(fromDefaultValue).getOrElse('{ NotExists })
+    }
 
     def newTFrom(args: List[Expr[?]]): Expr[T] =
       New(TypeTree.of[T])
@@ -399,7 +398,7 @@ object Made:
       // Ascribed to the precise singleton type: `exists`/`notExists` are `inline match`-based and
       // need the scrutinee's static type to be exactly `NotExists.type`, not the broader sealed trait.
       if tCompanion.isNoSymbol then '{ NotExists: NotExists.type } else Ref(tCompanion).asExprOf[AnyRef],
-    ).runtimeChecked match
+    ).runtimeChecked match {
       case (
             '[type meta <: Tuple; meta],
             '[type label <: String; label],
@@ -499,7 +498,7 @@ object Made:
                 }
               } =>
 
-            val hasFBound = tSymbol.tree match
+            val hasFBound = tSymbol.tree match {
               case ClassDef(_, constructor, _, _, _) =>
                 @tailrec def containsTypeRef(stack: List[TypeRepr], sym: Symbol): Boolean = stack match
                   case Nil => false
@@ -520,6 +519,7 @@ object Made:
                   case tp @ TypeDef(_, tt: TypeTree) => containsTypeRef(tt.tpe :: Nil, tp.symbol)
                   case _ => false
               case _ => false
+            }
 
             val elemTypesList = traverseTupleType(Type.of[mirroredElemTypes])
             val elemLabelsList = traverseTupleType(Type.of[mirroredElemLabels])
@@ -674,6 +674,8 @@ object Made:
           .orElse(deriveSum)
           .getOrElse:
             report.errorAndAbort(s"Unsupported Mirror type for ${tTpe.show}")
+    }
+  }
   // $COVERAGE-ON$
 
   /**

@@ -24,11 +24,11 @@ object whenAbsent:
   inline def value[T]: T = ${ valueImpl[T] }
 
   // $COVERAGE-OFF$
-  private def valueImpl[T: Type](using quotes: Quotes): Expr[T] =
+  private def valueImpl[T: Type](using quotes: Quotes): Expr[T] = {
     import quotes.reflect.*
 
     object DefaultValueMethod:
-      def unapply(s: Symbol): Option[Symbol] = s match
+      def unapply(s: Symbol): Option[Symbol] = s match {
         case ms if ms.isDefDef =>
           ms.name match
             case DefaultParamAccessorName(actualMethodName: String, idx: String) =>
@@ -36,13 +36,19 @@ object whenAbsent:
                 case "$lessinit$greater" =>
                   ms.owner.companionModule.companionClass.primaryConstructor
                 case name =>
-                  ms.owner.methodMember(name).headOption getOrElse report.errorAndAbort(
-                    s"whenAbsent.value macro could not find method '$name' in ${ms.owner.fullName}",
-                  )
+                  ms.owner
+                    .methodMember(name)
+                    .headOption
+                    .getOrElse(
+                      report.errorAndAbort(
+                        s"whenAbsent.value macro could not find method '$name' in ${ms.owner.fullName}",
+                      ),
+                    )
 
               method.paramSymss.flatten.lift(idx.toInt - 1)
             case _ => None
         case _ => None
+    }
 
     val owner = Symbol.spliceOwner.owner match
       case DefaultValueMethod(paramSymbol) => paramSymbol
@@ -53,4 +59,5 @@ object whenAbsent:
       case _ =>
         report.error("whenAbsent.value can only be used inside a parameter annotated with @whenAbsent")
         '{ ??? }
+}
 // $COVERAGE-ON$
