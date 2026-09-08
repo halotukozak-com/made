@@ -24,7 +24,7 @@ object SnippetCompiler:
    * @param options  extra scalac options (e.g. `-Werror`); classpath and outdir are added
    *                 automatically
    */
-  def compile(code: String, options: Seq[String] = Nil): List[Diagnostic] =
+  def compile(code: String, options: Seq[String] = Nil): List[Diagnostic] = {
     val src = Files.createTempFile("made-snippet-", ".scala")
     val outDir = Files.createTempDirectory("made-snippet-out-")
     val classpath = sys.props.getOrElse("java.class.path", "").nn
@@ -43,6 +43,7 @@ object SnippetCompiler:
     finally
       Files.deleteIfExists(src)
       deleteRecursively(outDir)
+  }
 
   private def deleteRecursively(p: Path): Unit =
     if Files.exists(p) then

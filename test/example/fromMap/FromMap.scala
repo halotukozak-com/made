@@ -10,7 +10,7 @@ object FromMap:
     case given Made.ProductOf[T] => derivedProduct[T]
     case _ => compiletime.error("Cannot derive FromMap")
 
-  inline private def derivedProduct[T](using m: Made.ProductOf[T]): FromMap[T] = source =>
+  inline private def derivedProduct[T](using m: Made.ProductOf[T]): FromMap[T] = { source =>
     val labels = compiletime.constValueTuple[m.ElemLabels].toArrayOf[String]
     val elems = m.elems.toList.asInstanceOf[List[MadeFieldElem]]
 
@@ -25,3 +25,4 @@ object FromMap:
         )
 
     m.fromUnsafeArray(values.toArray)
+  }

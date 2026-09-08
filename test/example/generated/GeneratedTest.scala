@@ -59,7 +59,7 @@ class GeneratedTest extends munit.FunSuite:
         case given Made.ProductOf[T] => derivedProduct[T]
         case _ => compiletime.error("some error")
 
-      inline private def derivedProduct[T](using mirror: Made.ProductOf[T]): Describe[T] = instance =>
+      inline private def derivedProduct[T](using mirror: Made.ProductOf[T]): Describe[T] = { instance =>
         val fieldLabels = compiletime
           .constValueTuple[mirror.ElemLabels]
           .toList
@@ -76,6 +76,7 @@ class GeneratedTest extends munit.FunSuite:
         val typeName = compiletime.constValue[mirror.Label]
 
         (fieldEntries ++ genEntries).mkString(s"$typeName(\n", ",\n", "\n)")
+      }
 
     val describe = Describe.derived[SensorReading]
     val output = describe(SensorReading("temp", 23.5))

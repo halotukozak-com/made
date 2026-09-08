@@ -237,7 +237,7 @@ object Done:
   transparent inline given derived[T]: Done.Of[T] = ${ derivedImpl[T] }
 
   // $COVERAGE-OFF$
-  private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] =
+  private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] = {
     import quotes.reflect.*
 
     val tTpe = TypeRepr.of[T]
@@ -265,7 +265,7 @@ object Done:
       outer: Expr[T],
       args: Expr[Tuple],
     )(using Quotes,
-    ): Expr[Out] =
+    ): Expr[Out] = {
       def go(tpe: TypeRepr, idx: Int): List[List[Term]] = tpe match
         case MethodType(_, paramTypes, result) =>
           val argTerms = paramTypes.zipWithIndex.map: (pTpe, i) =>
@@ -278,6 +278,7 @@ object Done:
       val sel = outer.asTerm.select(member)
       val applied = if argLists.isEmpty then sel else sel.appliedToArgss(argLists)
       applied.asExprOf[Out]
+    }
 
     val operations =
       for
@@ -406,6 +407,7 @@ object Done:
             },
           ]
         }
+  }
 // $COVERAGE-ON$
 
 @implicitNotFound(
@@ -438,7 +440,7 @@ extension [Handlers <: Tuple](handlers: Handlers)
 private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
   handlers: Expr[Handlers],
 )(using quotes: Quotes,
-): Expr[Target] =
+): Expr[Target] = {
   import quotes.reflect.*
   val tTpe = TypeRepr.of[Target]
   val members = tTpe.userDeclaredMembers
@@ -480,7 +482,7 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     case PolyType(_, _, res) => resultOf(res)
     case other => other.asType
 
-  def methodBody(argss: List[List[Tree]], index: Int, member: Symbol): Expr[?] =
+  def methodBody(argss: List[List[Tree]], index: Int, member: Symbol): Expr[?] = {
     val flatArgs: List[Term] = argss.flatten.collect { case t: Term => t }
     val memberTpe = tTpe.memberType(member).widen
     val (paramNames, paramTpes) =
@@ -515,6 +517,7 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
         val argsTuple = '{ ${ Expr.ofTupleFromSeq(flatArgs.map(_.asExpr)) }.asInstanceOf[a] }
         '{ $value.asInstanceOf[a => o].apply($argsTuple) }
       case _ => wontHappen
+  }
 
   val methodDefs: List[DefDef] = clsSym.declaredMethods.zipWithIndex.map:
     case (methodSym, index) =>
@@ -526,6 +529,7 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
     TypeTree.of[Target],
   )
   Block(List(clsDef), instance).asExprOf[Target]
+}
 // $COVERAGE-ON$
 
 private object InputElemImpl extends InputElem

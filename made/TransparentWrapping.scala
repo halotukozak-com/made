@@ -30,7 +30,7 @@ object TransparentWrapping:
 
   inline def derived[R, T]: TransparentWrapping[R, T] = ${ derivedImpl[R, T] }
   // $COVERAGE-OFF$
-  private def derivedImpl[R: Type, T: Type](using quotes: Quotes): Expr[TransparentWrapping[R, T]] =
+  private def derivedImpl[R: Type, T: Type](using quotes: Quotes): Expr[TransparentWrapping[R, T]] = {
     import quotes.reflect.*
 
     val symbol = TypeRepr.of[T].typeSymbol
@@ -38,7 +38,7 @@ object TransparentWrapping:
       case field :: Nil => field
       case _ => report.errorAndAbort(s"Expected a single case field for ${symbol.name}")
 
-    field.termRef.widen.asType match
+    field.termRef.widen.asType match {
       case '[R] =>
         '{
           new TransparentWrapping[R, T]:
@@ -55,4 +55,6 @@ object TransparentWrapping:
         }
       case '[fieldType] =>
         report.errorAndAbort(s"Expected a single case field of type ${TypeRepr.of[fieldType]} for ${symbol.name}")
+    }
+  }
 // $COVERAGE-ON$
