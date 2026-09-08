@@ -48,7 +48,7 @@ object whenAbsent:
               method.paramSymss.flatten.lift(idx.toInt - 1)
             case _ => None
         case _ => None
-    }
+      }
 
     val owner = Symbol.spliceOwner.owner match
       case DefaultValueMethod(paramSymbol) => paramSymbol
@@ -59,5 +59,5 @@ object whenAbsent:
       case _ =>
         report.error("whenAbsent.value can only be used inside a parameter annotated with @whenAbsent")
         '{ ??? }
-}
+  }
 // $COVERAGE-ON$

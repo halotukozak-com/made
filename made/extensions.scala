@@ -5,6 +5,7 @@ import scala.quoted.*
 import halotukozak.commons.*
 
 extension [M <: Tuple](self: { type Metadata = M })(using inline ev: M containsOnly Meta) {
+
   /**
    * Returns `true` if the mirror's `Metadata` tuple contains an annotation of type `A`.
    *
@@ -49,6 +50,7 @@ extension [Ls <: Tuple](l: { type ElemLabels = Ls })
   inline def elemLabels: Ls = compiletime.constValueTuple[Ls]
 
 extension (es: Tuple)(using inline ev: es.type containsOnly { type Metadata <: Tuple }) {
+
   /**
    * Per-element [[hasAnnotation]] over a tuple whose entries each declare a `Metadata` type member
    * (e.g. a tuple of [[MadeElem]]s, [[GeneratedMadeElem]]s, or a singleton `Made` instance's

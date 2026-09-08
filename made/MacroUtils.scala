@@ -65,6 +65,7 @@ private[made] def reportOnDuplicates(labels: Seq[(label: String, original: Strin
       if originals.sizeIs > 1 then report.error(s"${originals.mkString(", ")} have the same @name: $label")
 
 extension (using quotes: Quotes)(symbol: quotes.reflect.Symbol) {
+
   /**
    * Symbols whose annotations are considered to "belong" to this symbol: the symbol itself,
    * the matching constructor parameter of its owning class (for case class accessors), and all

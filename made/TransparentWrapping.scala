@@ -55,6 +55,6 @@ object TransparentWrapping:
         }
       case '[fieldType] =>
         report.errorAndAbort(s"Expected a single case field of type ${TypeRepr.of[fieldType]} for ${symbol.name}")
+    }
   }
-}
 // $COVERAGE-ON$

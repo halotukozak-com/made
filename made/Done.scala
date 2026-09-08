@@ -407,7 +407,7 @@ object Done:
             },
           ]
         }
-}
+  }
 // $COVERAGE-ON$
 
 @implicitNotFound(
