@@ -11,6 +11,9 @@
 //> using options -Ycheck:all
 //> using options -Yexplicit-nulls
 //> using options -Wsafe-init -Werror
+// methods past the compiler's hardcoded 3000-node coverage-instrumentation threshold (not configurable)
+// are left uninstrumented; CI's -Wall reports that, which -Werror would otherwise turn into an error
+//> using options "-Wconf:msg=Skipping coverage instrumentation.*:s"
 //> using options "-Wconf:msg=Missing symbol position.*:s"
 // -Wall is added in CI only (shared ci.yml in halotukozak-com/.github)
 // compiler debugging flags, to switch back on while chasing a compiler problem:
