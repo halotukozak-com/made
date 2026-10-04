@@ -16,7 +16,7 @@ class BugHuntInheritanceTest extends munit.FunSuite:
   test("@whenAbsent on a parent trait member is honoured on the child case class field") {
     val m = Made.derived[ChildWithDefault]
     val n *: EmptyTuple = m.elems
-    assertEquals(n.default, 42)
+    assertEquals[Any, Any](n.default, 42)
   }
 
   test("MetaAnnotation declared on a parent trait shows up in child Metadata") {

@@ -26,8 +26,8 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     assertEquals(v.label, "v")
     val readInt: Int | String = v.apply(WithUnion(42))
     val readStr: Int | String = v.apply(WithUnion("x"))
-    assertEquals(readInt, 42: Int | String)
-    assertEquals(readStr, "x": Int | String)
+    assertEquals[Any, Any](readInt, 42: Int | String)
+    assertEquals[Any, Any](readStr, "x": Int | String)
   }
 
   test("derives Product with intersection-type field") {
@@ -197,7 +197,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("Unsupported Mirror type"),
-      s"expected 'Unsupported Mirror type' diagnostic but got: $diags",
+      s"expected 'Unsupported Mirror type' diagnostic but got: ${diags.toString}",
     )
   }
 
@@ -211,7 +211,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("Unsupported Mirror type"),
-      s"expected 'Unsupported Mirror type' diagnostic but got: $diags",
+      s"expected 'Unsupported Mirror type' diagnostic but got: ${diags.toString}",
     )
   }
 
@@ -225,7 +225,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("Unsupported Mirror type") || diags.containsMessage("No given instance"),
-      s"expected unsupported diagnostic but got: $diags",
+      s"expected unsupported diagnostic but got: ${diags.toString}",
     )
   }
 
@@ -238,7 +238,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("Unsupported Mirror type") || diags.containsMessage("does not conform"),
-      s"expected derivation rejection but got: $diags",
+      s"expected derivation rejection but got: ${diags.toString}",
     )
   }
 
@@ -317,7 +317,7 @@ object EdgeCaseTypesTest:
   case class Box[+A](value: A)
 
   trait UserTag
-  case class Tagged[A, Tag](value: A)
+  case class Tagged[A, Label](value: A)
 
   // --- Recursive shapes ----------------------------------------------------
   case class Node(value: Int, children: List[Node])

@@ -68,14 +68,14 @@ class GeneratedTest extends munit.FunSuite:
         val genElems = mirror.generatedElems.toList
 
         val fieldValues = instance.asInstanceOf[Product].productIterator.toList
-        val fieldEntries = fieldLabels.zip(fieldValues).map((label, value) => s"$label = $value")
+        val fieldEntries = fieldLabels.zip(fieldValues).map((label, value) => s"$label = ${value.toString}")
         val genEntries = genElems.map: elem =>
           val gen = elem.asInstanceOf[GeneratedMadeElem.OuterOf[T]]
           gen(instance)
 
         val typeName = compiletime.constValue[mirror.Label]
 
-        (fieldEntries ++ genEntries).mkString(s"$typeName(\n", ",\n", "\n)")
+        (fieldEntries ++ genEntries).mkString(s"${typeName.toString}(\n", ",\n", "\n)")
       }
 
     val describe = Describe.derived[SensorReading]

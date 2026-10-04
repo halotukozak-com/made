@@ -27,7 +27,7 @@ object Show:
     val fieldShows = compiletime.summonAll[Tuple.Map[m.ElemTypes, Show]].toList.asInstanceOf[List[Show[Any]]]
     val fields = labels.lazyZip(values).lazyZip(fieldShows).map((label, value, s) => s"$label = ${s.show(value)}")
 
-    s"$typeName(${fields.mkString(", ")})"
+    s"${typeName.toString}(${fields.mkString(", ")})"
   }
 
   inline def deriveTransparent[T](m: Made.TransparentOf[T]): Show[T] = value =>

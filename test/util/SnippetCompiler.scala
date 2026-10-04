@@ -38,7 +38,7 @@ object SnippetCompiler:
         options.concat(Seq("-classpath", classpath, "-d", outDir.toString, src.toString)).toArray,
         reporter,
         null,
-      )
+      ): Unit
       reporter.diagnostics
     finally
       Files.deleteIfExists(src)
@@ -48,7 +48,7 @@ object SnippetCompiler:
   private def deleteRecursively(p: Path): Unit =
     if Files.exists(p) then
       Using.resource(Files.walk(p)): stream =>
-        stream.sorted(java.util.Comparator.reverseOrder).nn.forEach(Files.deleteIfExists(_))
+        stream.sorted(java.util.Comparator.reverseOrder).nn.forEach(path => Files.deleteIfExists(path): Unit)
 
   extension (diags: List[Diagnostic])
     /** True iff any diagnostic's message contains `substring`. */

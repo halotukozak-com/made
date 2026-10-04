@@ -138,9 +138,9 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (x, y, z) = m.elems
 
-    assertEquals(x.default, None)
-    assertEquals(y.default, null: String | Null)
-    assertEquals(z.default, NotExists)
+    assertEquals[Any, Any](x.default, None)
+    assertEquals[Any, Any](y.default, null)
+    assertEquals[Any, Any](z.default, NotExists)
   }
 
   test("@optionalParam priority") {
@@ -149,11 +149,11 @@ class MadeDefaultsTest extends munit.FunSuite:
     val (a, b) = m.elems
 
     // @whenAbsent(Some(42)) should take priority over @optionalParam
-    assertEquals(a.default, Some(42))
+    assertEquals[Any, Any](a.default, Some(42))
     // @optionalParam should take priority over Scala default None
     // Wait, let's check the code:
     // fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue
-    assertEquals(b.default, None)
+    assertEquals[Any, Any](b.default, None)
   }
 
   test("generic case class with Scala default") {
@@ -188,7 +188,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val m = Made.derived[WithCustomOptional]
     val x *: EmptyTuple = m.elems
-    assertEquals(x.default, CustomOpt("none"))
+    assertEquals[Any, Any](x.default, CustomOpt("none"))
   }
 
   test("mutable default is fresh on every access, not shared") {
@@ -199,7 +199,7 @@ class MadeDefaultsTest extends munit.FunSuite:
     first += "a"
     val second = x.default.asInstanceOf[scala.collection.mutable.Set[String]]
 
-    assert(second.isEmpty, s"expected a fresh Set, but got one polluted by a previous .default call: $second")
+    assert(second.isEmpty, s"expected a fresh Set, but got one polluted by a previous .default call: ${second.toString}")
   }
 
 case class WithDefaults(x: Int, y: String = "hello", z: Boolean = true)

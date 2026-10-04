@@ -10,5 +10,5 @@ class DefaultTest extends munit.FunSuite:
   test("Default for A | Null") {
     val default = summon[Default[String | Null]]
 
-    assertEquals(default(), null: String | Null)
+    assertEquals[Any, Any](default(), null: String | Null)
   }
