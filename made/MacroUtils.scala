@@ -3,7 +3,7 @@ package halotukozak.made
 import halotukozak.*
 import halotukozak.made.annotation.{name, repeated, AnnotationAggregate, MetaAnnotation}
 
-import scala.annotation.{tailrec, Annotation, StaticAnnotation}
+import scala.annotation.{publicInBinary, tailrec, Annotation, StaticAnnotation}
 import scala.collection.immutable.List
 import scala.quoted.*
 
@@ -11,7 +11,7 @@ import scala.quoted.*
 // like ValueOf but without the implicit search and boxing
 inline private[made] def singleValueOf[T <: scala.Singleton]: T = ${ singleValueOfImpl[T] }
 
-private def singleValueOfImpl[T <: scala.Singleton: Type](using quotes: Quotes): Expr[T] =
+@publicInBinary private[made] def singleValueOfImpl[T <: scala.Singleton: Type](using quotes: Quotes): Expr[T] =
   import quotes.reflect.*
   val term = TypeRepr.of[T] match
     case ConstantType(c: Constant) => Literal(c)

@@ -2,9 +2,9 @@ package halotukozak.made
 
 import halotukozak.made.annotation.*
 
-import scala.annotation.{implicitNotFound, tailrec}
+import scala.annotation.{implicitNotFound, publicInBinary, tailrec}
 import scala.deriving.Mirror
-import scala.quoted.*
+import scala.quoted.{Type as _, *}
 import halotukozak.*
 import halotukozak.commons.*
 
@@ -296,7 +296,7 @@ object Made:
   transparent inline given derived[T]: Of[T] = ${ derivedImpl[T] }
 
   // $COVERAGE-OFF$
-  private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] = {
+  @publicInBinary private[made] def derivedImpl[T: quoted.Type](using quotes: Quotes): Expr[Made.Of[T]] = {
     import quotes.reflect.*
 
     // dealiasKeepOpaques unfolds transparent aliases (e.g. `type AliasFoo = Foo`) so that
@@ -357,13 +357,13 @@ object Made:
             ]
           }
 
-    def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[E | NotExists] = {
+    def defaultOf[E: quoted.Type](index: Int, symbol: Symbol): Expr[E | NotExists] = {
       def fromWhenAbsent = symbol
         .getAnnotationOf[whenAbsent[?]]
         .map:
           case '{ `whenAbsent`($value: E) } => value
           case '{ `whenAbsent`($_ : e) } =>
-            report.error(s"whenAbsent should have value with type ${Type.show[e]}")
+            report.error(s"whenAbsent should have value with type ${quoted.Type.show[e]}")
             '{ ??? }
 
       def fromOptionalParam = Option.when(symbol.hasAnnotationOf[optionalParam]) {
@@ -406,7 +406,7 @@ object Made:
             '{ type companion <: AnyRef | NotExists; $companionExpr: companion },
           ) =>
         def deriveSingleton = Option.when(tTpe.isSingleton || tTpe <:< TypeRepr.of[Unit]) {
-          Type.of[T] match
+          quoted.Type.of[T] match
             case '[type s <: scala.Singleton; s] =>
               '{
                 new MadeSingletonImpl(singleValueOf[s], $generatedElemsExpr)
@@ -521,8 +521,8 @@ object Made:
               case _ => false
             }
 
-            val elemTypesList = traverseTupleType(Type.of[mirroredElemTypes])
-            val elemLabelsList = traverseTupleType(Type.of[mirroredElemLabels])
+            val elemTypesList = traverseTupleType(quoted.Type.of[mirroredElemTypes])
+            val elemLabelsList = traverseTupleType(quoted.Type.of[mirroredElemLabels])
 
             val (exprs, names) = if tSymbol.caseFields.sizeIs == elemTypesList.size then
               elemTypesList
@@ -616,7 +616,7 @@ object Made:
                 }
               } =>
 
-            val (exprs, names) = traverseTupleType(Type.of[mirroredElemTypes])
+            val (exprs, names) = traverseTupleType(quoted.Type.of[mirroredElemTypes])
               .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                 case ((exprs, names), '[subType]) =>
                   val subType = TypeRepr.of[subType]
@@ -624,7 +624,7 @@ object Made:
 
                   (labelTypeOf(subSymbol, subSymbol.name), metaTypeOf(subSymbol)).runtimeChecked match
                     case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
-                      val expr = Type.of[subType] match
+                      val expr = quoted.Type.of[subType] match
                         case '[type s <: scala.Singleton; s] =>
                           '{
                             new SubSingletonElemImpl[s](singleValueOf[s])
@@ -662,7 +662,7 @@ object Made:
                     },
                   ]
                 }
-              case '{ $_ : x } => report.errorAndAbort(s"Unexpected Mirror type: ${Type.show[x]}")
+              case '{ $_ : x } => report.errorAndAbort(s"Unexpected Mirror type: ${quoted.Type.show[x]}")
 
           case x => report.errorAndAbort(s"Unexpected Mirror type: ${x.show}")
         }
@@ -786,7 +786,7 @@ private final class FieldElemImpl[Outer, Elem](getter: Outer => Elem, elemDefaul
   // by-name: a mutable default (e.g. `mutable.Set.empty`) must yield a fresh instance on every access.
   def default: Elem | NotExists = elemDefault
 
-private object SubElemImpl extends MadeSubElem
+@publicInBinary private[made] object SubElemImpl extends MadeSubElem
 
 private final class SubSingletonElemImpl[S](val value: S) extends MadeSubSingletonElem:
   type Type = S
