@@ -1,7 +1,7 @@
 package halotukozak.made
 
 import scala.annotation.{implicitNotFound, publicInBinary, tailrec}
-import scala.quoted.{Type as _, *}
+import scala.quoted.*
 import scala.NamedTuple.{AnyNamedTuple, NamedTuple}
 import halotukozak.*
 import halotukozak.commons.*
@@ -237,16 +237,16 @@ object Done:
   transparent inline given derived[T]: Done.Of[T] = ${ derivedImpl[T] }
 
   // $COVERAGE-OFF$
-  @publicInBinary private[made] def derivedImpl[T: quoted.Type](using quotes: Quotes): Expr[Done.Of[T]] = {
+  @publicInBinary private[made] def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] = {
     import quotes.reflect.*
 
     val tTpe = TypeRepr.of[T]
     val tSymbol = tTpe.typeSymbol
 
-    type Param = (name: quoted.Type[? <: String], tpe: quoted.Type[?])
+    type Param = (name: Type[? <: String], tpe: Type[?])
 
     object extract:
-      def unapply(tpe: TypeRepr): (List[Param], quoted.Type[? <: AnyKind]) = tpe match
+      def unapply(tpe: TypeRepr): (List[Param], Type[? <: AnyKind]) = tpe match
         case MethodType(
               paramNames,
               paramTypes,
@@ -259,7 +259,7 @@ object Done:
         case other =>
           (Nil, other.asType)
 
-    def invokeExpr[Out: quoted.Type](
+    def invokeExpr[Out: Type](
       member: Symbol,
       memberTpe: TypeRepr,
       outer: Expr[T],
@@ -315,11 +315,11 @@ object Done:
         // defs / vals and `List(Nil)` for an empty-parens `def f()`, so this faithfully
         // distinguishes the two shapes while keeping `InputElems` flattened.
         val paramListSizes: List[Int] = member.paramSymss.map(_.count(!_.isType))
-        val paramListsType: quoted.Type[? <: Tuple] =
-          paramListSizes.foldRight[quoted.Type[? <: Tuple]](quoted.Type.of[EmptyTuple]):
+        val paramListsType: Type[? <: Tuple] =
+          paramListSizes.foldRight[Type[? <: Tuple]](Type.of[EmptyTuple]):
             case (n, '[type acc <: Tuple; acc]) =>
               ConstantType(IntConstant(n)).asType match
-                case '[type nT <: Int; nT] => quoted.Type.of[nT *: acc]
+                case '[type nT <: Int; nT] => Type.of[nT *: acc]
                 case _ => wontHappen
             case (_, _) => wontHappen
         (
@@ -437,7 +437,7 @@ extension [Handlers <: Tuple](handlers: Handlers)
     ${ materializeImpl[Target, Handlers]('handlers) }
 
 // $COVERAGE-OFF$
-@publicInBinary private[made] def materializeImpl[Target: quoted.Type, Handlers <: Tuple: quoted.Type](
+@publicInBinary private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
   handlers: Expr[Handlers],
 )(using quotes: Quotes,
 ): Expr[Target] = {
@@ -477,7 +477,7 @@ extension [Handlers <: Tuple](handlers: Handlers)
     case _ => Nil
 
   @tailrec
-  def resultOf(mt: TypeRepr): quoted.Type[?] = mt match
+  def resultOf(mt: TypeRepr): Type[?] = mt match
     case MethodType(_, _, res) => resultOf(res)
     case PolyType(_, _, res) => resultOf(res)
     case other => other.asType
@@ -489,7 +489,7 @@ extension [Handlers <: Tuple](handlers: Handlers)
       flattenParamTypes(memberTpe).map((name, tpe) => (ConstantType(StringConstant(name)), tpe)).unzip
 
     val outTpe = resultOf(memberTpe)
-    val argsTpe: Option[quoted.Type[? <: AnyNamedTuple]] =
+    val argsTpe: Option[Type[? <: AnyNamedTuple]] =
       if paramTpes.isEmpty then None
       else
         val tupleN = paramTpes.size match
@@ -498,7 +498,7 @@ extension [Handlers <: Tuple](handlers: Handlers)
           case n => defn.TupleClass(n).typeRef
         (tupleN.appliedTo(paramNames).asType, tupleN.appliedTo(paramTpes).asType) match
           case ('[type names <: Tuple; names], '[type types <: Tuple; types]) =>
-            Some(quoted.Type.of[NamedTuple[names, types]])
+            Some(Type.of[NamedTuple[names, types]])
           case _ => wontHappen
 
     // `handlers`' element `index` is read via `productElement` (a plain `Product` member every
