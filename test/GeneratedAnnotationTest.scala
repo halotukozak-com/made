@@ -178,7 +178,7 @@ class GeneratedAnnotationTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("@generated cannot be applied to methods with parameters"),
-      s"expected '@generated cannot be applied to methods with parameters' but got: $diags",
+      s"expected '@generated cannot be applied to methods with parameters' but got: ${diags.toString}",
     )
   }
 

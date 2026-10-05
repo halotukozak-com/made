@@ -70,7 +70,7 @@ class RuntimeAccessTest extends munit.FunSuite:
     val m = Made.derived[RAWithDefaults]
     val elems = m.elems.toList.asInstanceOf[List[MadeFieldElem]]
     val defaults = elems.map(_.default)
-    assertEquals(defaults, List(NotExists, "hello", true))
+    assertEquals(defaults, List[Any](NotExists, "hello", true))
   }
 
   test("Seq[GeneratedMadeElem].map(_.default) all None") {
@@ -166,7 +166,7 @@ class RuntimeAccessTest extends munit.FunSuite:
     val instance = RAWithGenerated("test")
     val genElems = m.generatedElems.toList.asInstanceOf[List[GeneratedMadeElem { type OuterType = RAWithGenerated }]]
     val results = genElems.map(_.apply(instance))
-    assertEquals(results, List(4, "TEST"))
+    assertEquals(results, List[Any](4, "TEST"))
   }
 
   // --- Round-trip: defaults -> fromUnsafeArray ---

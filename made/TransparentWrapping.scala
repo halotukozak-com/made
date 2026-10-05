@@ -1,5 +1,6 @@
 package halotukozak.made
 
+import scala.annotation.publicInBinary
 import scala.quoted.*
 
 /**
@@ -30,7 +31,8 @@ object TransparentWrapping:
 
   inline def derived[R, T]: TransparentWrapping[R, T] = ${ derivedImpl[R, T] }
   // $COVERAGE-OFF$
-  private def derivedImpl[R: Type, T: Type](using quotes: Quotes): Expr[TransparentWrapping[R, T]] = {
+  @publicInBinary private[made] def derivedImpl[R: Type, T: Type](using quotes: Quotes)
+    : Expr[TransparentWrapping[R, T]] = {
     import quotes.reflect.*
 
     val symbol = TypeRepr.of[T].typeSymbol
@@ -54,7 +56,7 @@ object TransparentWrapping:
               }
         }
       case '[fieldType] =>
-        report.errorAndAbort(s"Expected a single case field of type ${TypeRepr.of[fieldType]} for ${symbol.name}")
+        report.errorAndAbort(s"Expected a single case field of type ${TypeRepr.of[fieldType].show} for ${symbol.name}")
     }
   }
 // $COVERAGE-ON$

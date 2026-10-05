@@ -1,6 +1,7 @@
 package halotukozak.made
 package annotation
 
+import scala.annotation.publicInBinary
 import scala.quoted.*
 
 /**
@@ -24,7 +25,7 @@ object whenAbsent:
   inline def value[T]: T = ${ valueImpl[T] }
 
   // $COVERAGE-OFF$
-  private def valueImpl[T: Type](using quotes: Quotes): Expr[T] = {
+  @publicInBinary private[made] def valueImpl[T: Type](using quotes: Quotes): Expr[T] = {
     import quotes.reflect.*
 
     object DefaultValueMethod:

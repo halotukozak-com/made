@@ -2,7 +2,7 @@ package halotukozak.made
 
 import halotukozak.made.annotation.*
 
-import scala.annotation.{implicitNotFound, tailrec}
+import scala.annotation.{implicitNotFound, publicInBinary, tailrec}
 import scala.deriving.Mirror
 import scala.quoted.*
 import halotukozak.*
@@ -296,7 +296,7 @@ object Made:
   transparent inline given derived[T]: Of[T] = ${ derivedImpl[T] }
 
   // $COVERAGE-OFF$
-  private def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] = {
+  @publicInBinary private[made] def derivedImpl[T: Type](using quotes: Quotes): Expr[Made.Of[T]] = {
     import quotes.reflect.*
 
     // dealiasKeepOpaques unfolds transparent aliases (e.g. `type AliasFoo = Foo`) so that
@@ -786,7 +786,7 @@ private final class FieldElemImpl[Outer, Elem](getter: Outer => Elem, elemDefaul
   // by-name: a mutable default (e.g. `mutable.Set.empty`) must yield a fresh instance on every access.
   def default: Elem | NotExists = elemDefault
 
-private object SubElemImpl extends MadeSubElem
+@publicInBinary private[made] object SubElemImpl extends MadeSubElem
 
 private final class SubSingletonElemImpl[S](val value: S) extends MadeSubSingletonElem:
   type Type = S

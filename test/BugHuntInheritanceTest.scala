@@ -4,7 +4,7 @@ import halotukozak.made.annotation.*
 
 import scala.annotation.StaticAnnotation
 
-class BugHuntInheritanceTest extends munit.FunSuite:
+class BugHuntInheritanceTest extends munit.FunSuite, UnionSafeCompare:
   import BugHuntInheritanceTest.*
 
   test("@mongoId aggregate annotation declared on a parent trait propagates to child field") {

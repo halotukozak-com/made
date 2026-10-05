@@ -1,7 +1,7 @@
 package halotukozak.made
 
 import halotukozak.made.annotation.*
-class MadeDefaultsTest extends munit.FunSuite:
+class MadeDefaultsTest extends munit.FunSuite, UnionSafeCompare:
   test("case class with defaults") {
     val m: Made.Product {
       type Type = WithDefaults
@@ -139,7 +139,7 @@ class MadeDefaultsTest extends munit.FunSuite:
     val (x, y, z) = m.elems
 
     assertEquals(x.default, None)
-    assertEquals(y.default, null: String | Null)
+    assertEquals(y.default, null)
     assertEquals(z.default, NotExists)
   }
 
@@ -199,7 +199,7 @@ class MadeDefaultsTest extends munit.FunSuite:
     first += "a"
     val second = x.default.asInstanceOf[scala.collection.mutable.Set[String]]
 
-    assert(second.isEmpty, s"expected a fresh Set, but got one polluted by a previous .default call: $second")
+    assert(second.isEmpty, s"expected a fresh Set, but got one polluted by a previous .default call: ${second.toString}")
   }
 
 case class WithDefaults(x: Int, y: String = "hello", z: Boolean = true)

@@ -1,6 +1,6 @@
 package halotukozak.made
 
-class DefaultTest extends munit.FunSuite:
+class DefaultTest extends munit.FunSuite, UnionSafeCompare:
   test("Default for Option[A]") {
     val default = summon[Default[Option[String]]]
 

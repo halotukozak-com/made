@@ -6,7 +6,7 @@ import halotukozak.made.annotation.{transparent, MetaAnnotation}
 import halotukozak.made.util.SnippetCompiler
 import halotukozak.made.util.SnippetCompiler.containsMessage
 
-class EdgeCaseTypesTest extends munit.FunSuite:
+class EdgeCaseTypesTest extends munit.FunSuite, UnionSafeCompare:
   import EdgeCaseTypesTest.*
 
   // --- Field types ---------------------------------------------------------
@@ -197,7 +197,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("Unsupported Mirror type"),
-      s"expected 'Unsupported Mirror type' diagnostic but got: $diags",
+      s"expected 'Unsupported Mirror type' diagnostic but got: ${diags.toString}",
     )
   }
 
@@ -211,7 +211,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("Unsupported Mirror type"),
-      s"expected 'Unsupported Mirror type' diagnostic but got: $diags",
+      s"expected 'Unsupported Mirror type' diagnostic but got: ${diags.toString}",
     )
   }
 
@@ -225,7 +225,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("Unsupported Mirror type") || diags.containsMessage("No given instance"),
-      s"expected unsupported diagnostic but got: $diags",
+      s"expected unsupported diagnostic but got: ${diags.toString}",
     )
   }
 
@@ -238,7 +238,7 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     )
     assert(
       diags.containsMessage("Unsupported Mirror type") || diags.containsMessage("does not conform"),
-      s"expected derivation rejection but got: $diags",
+      s"expected derivation rejection but got: ${diags.toString}",
     )
   }
 
@@ -317,7 +317,7 @@ object EdgeCaseTypesTest:
   case class Box[+A](value: A)
 
   trait UserTag
-  case class Tagged[A, Tag](value: A)
+  case class Tagged[A, Label](value: A)
 
   // --- Recursive shapes ----------------------------------------------------
   case class Node(value: Int, children: List[Node])

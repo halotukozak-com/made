@@ -2,7 +2,7 @@ package halotukozak.made
 
 import halotukozak.made.annotation.*
 
-class ComplexDataStructuresTest extends munit.FunSuite:
+class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
 
   // --- Products with collection types ---
 

@@ -7,13 +7,18 @@
 
 //> using options -deprecation -feature -new-syntax -unchecked
 //> using options -language:noAutoTupling
-//> using options -Vprofile -Xprint-inline
-//> using options -Xcheck-macros -Ycheck:macros -Ydebug-flags -Ydebug-missing-refs
+//> using options -Xcheck-macros -Ycheck:macros
 //> using options -Ycheck:all
-//> using options -Yexplain-lowlevel -Yexplicit-nulls
-//> using options -Yshow-suppressed-errors -Yshow-var-bounds
-//> using options -Wsafe-init -Werror -Wunused:all
+//> using options -Yexplicit-nulls
+//> using options -Wsafe-init -Werror
+// methods past the compiler's hardcoded 3000-node coverage-instrumentation threshold (not configurable)
+// are left uninstrumented; CI's -Wall reports that, as an info so -Werror doesn't fail on it but it stays visible
+//> using options "-Wconf:msg=Skipping coverage instrumentation.*:i"
 //> using options "-Wconf:msg=Missing symbol position.*:s"
+// -Wall's warnings (except -Wsafe-init, set above) are added in CI only: shared ci.yml in halotukozak-com/.github
+// compiler debugging flags, to switch back on while chasing a compiler problem:
+////> using options -Vprofile -Xprint-inline -Ydebug-flags -Ydebug-missing-refs
+////> using options -Yexplain-lowlevel -Yshow-suppressed-errors -Yshow-var-bounds
 ////> using options -Yprofile-enabled" -Yprofile-trace:debug/compile-trace.json"
 
 //> using publish.organization com.halotukozak

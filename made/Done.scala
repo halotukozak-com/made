@@ -1,6 +1,6 @@
 package halotukozak.made
 
-import scala.annotation.{implicitNotFound, tailrec}
+import scala.annotation.{implicitNotFound, publicInBinary, tailrec}
 import scala.quoted.*
 import scala.NamedTuple.{AnyNamedTuple, NamedTuple}
 import halotukozak.*
@@ -237,7 +237,7 @@ object Done:
   transparent inline given derived[T]: Done.Of[T] = ${ derivedImpl[T] }
 
   // $COVERAGE-OFF$
-  private def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] = {
+  @publicInBinary private[made] def derivedImpl[T: Type](using quotes: Quotes): Expr[Done.Of[T]] = {
     import quotes.reflect.*
 
     val tTpe = TypeRepr.of[T]
@@ -437,7 +437,7 @@ extension [Handlers <: Tuple](handlers: Handlers)
     ${ materializeImpl[Target, Handlers]('handlers) }
 
 // $COVERAGE-OFF$
-private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
+@publicInBinary private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
   handlers: Expr[Handlers],
 )(using quotes: Quotes,
 ): Expr[Target] = {
@@ -497,7 +497,8 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
           case 1 => TypeRepr.of[Tuple1] // for some reason
           case n => defn.TupleClass(n).typeRef
         (tupleN.appliedTo(paramNames).asType, tupleN.appliedTo(paramTpes).asType) match
-          case ('[type names <: Tuple; names], '[type types <: Tuple; types]) => Some(Type.of[NamedTuple[names, types]])
+          case ('[type names <: Tuple; names], '[type types <: Tuple; types]) =>
+            Some(Type.of[NamedTuple[names, types]])
           case _ => wontHappen
 
     // `handlers`' element `index` is read via `productElement` (a plain `Product` member every
@@ -532,7 +533,7 @@ private[made] def materializeImpl[Target: Type, Handlers <: Tuple: Type](
 }
 // $COVERAGE-ON$
 
-private object InputElemImpl extends InputElem
+@publicInBinary private[made] object InputElemImpl extends InputElem
 
 private final class DoneImpl[T, L <: String, M <: Tuple, Ops <: Tuple](val operations: Ops) extends Done:
   type Type = T

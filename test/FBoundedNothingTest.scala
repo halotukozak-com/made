@@ -18,11 +18,11 @@ class FBoundedNothingTest extends munit.FunSuite:
 
   private def assertWarns(definitions: String, derivation: String): Unit =
     val diags = deriveSnippet(definitions, derivation)
-    assert(diags.containsMessage("F-bounded"), s"Expected F-bounded warning but got: $diags")
+    assert(diags.containsMessage("F-bounded"), s"Expected F-bounded warning but got: ${diags.toString}")
 
   private def assertSilent(definitions: String, derivation: String): Unit =
     val diags = deriveSnippet(definitions, derivation)
-    assert(!diags.containsMessage("F-bounded"), s"Expected no F-bounded warning but got: $diags")
+    assert(!diags.containsMessage("F-bounded"), s"Expected no F-bounded warning but got: ${diags.toString}")
 
   test("covariant F-bounded case class deriving at T = Nothing should warn") {
     assertWarns(
