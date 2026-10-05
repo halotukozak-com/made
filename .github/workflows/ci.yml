@@ -10,11 +10,13 @@ on:
 # them, as in the Mill-built libraries, where build.mill adds -Wall when CI is set. They're spelled out
 # instead of -Wall because -Wall also implies -Wsafe-init, which nothing can switch off afterwards, and
 # the init checker never terminates on mrpc; commons and made enable -Wsafe-init in project.scala.
+# -Wshadow:type-parameter-shadow is left out too: it mostly flags refinement members such as
+# `type Of[T] = Made { type Type = T }` shadowing an imported scala.quoted.Type.
 env:
   WALL: >-
     -O -Wvalue-discard -O -Wnonunit-statement -O -Wenum-comment-discard -O -Wimplausible-patterns
     -O -WunstableInlineAccessors -O -Wtostring-interpolated -O -Wrecurse-with-default -O -Wwrong-arrow
-    -O -Winfer-union -O -Wunused:all -O -Wshadow:all
+    -O -Winfer-union -O -Wunused:all -O -Wshadow:private-shadow
 
 jobs:
   lint:
