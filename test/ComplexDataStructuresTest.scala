@@ -2,7 +2,7 @@ package halotukozak.made
 
 import halotukozak.made.annotation.*
 
-class ComplexDataStructuresTest extends munit.FunSuite:
+class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
 
   // --- Products with collection types ---
 
@@ -247,8 +247,8 @@ class ComplexDataStructuresTest extends munit.FunSuite:
   test("defaults with collection types") {
     val m = Made.derived[WithCollectionDefaults]
     val xs *: ys *: EmptyTuple = m.elems
-    assertEquals[Any, Any](xs.default, List.empty[Int])
-    assertEquals[Any, Any](ys.default, Map("key" -> "value"))
+    assertEquals(xs.default, List.empty[Int])
+    assertEquals(ys.default, Map("key" -> "value"))
   }
 
   // --- @whenAbsent with complex types ---
@@ -256,7 +256,7 @@ class ComplexDataStructuresTest extends munit.FunSuite:
   test("@whenAbsent with List default") {
     val m = Made.derived[WhenAbsentCollection]
     val items *: EmptyTuple = m.elems
-    assertEquals[Any, Any](items.default, List(1, 2, 3))
+    assertEquals(items.default, List(1, 2, 3))
   }
 
 // --- Fixtures ---

@@ -6,7 +6,7 @@ import halotukozak.made.annotation.{transparent, MetaAnnotation}
 import halotukozak.made.util.SnippetCompiler
 import halotukozak.made.util.SnippetCompiler.containsMessage
 
-class EdgeCaseTypesTest extends munit.FunSuite:
+class EdgeCaseTypesTest extends munit.FunSuite, UnionSafeCompare:
   import EdgeCaseTypesTest.*
 
   // --- Field types ---------------------------------------------------------
@@ -26,8 +26,8 @@ class EdgeCaseTypesTest extends munit.FunSuite:
     assertEquals(v.label, "v")
     val readInt: Int | String = v.apply(WithUnion(42))
     val readStr: Int | String = v.apply(WithUnion("x"))
-    assertEquals[Any, Any](readInt, 42: Int | String)
-    assertEquals[Any, Any](readStr, "x": Int | String)
+    assertEquals(readInt, 42: Int | String)
+    assertEquals(readStr, "x": Int | String)
   }
 
   test("derives Product with intersection-type field") {

@@ -1,7 +1,7 @@
 package halotukozak.made
 
 import halotukozak.made.annotation.*
-class MadeDefaultsTest extends munit.FunSuite:
+class MadeDefaultsTest extends munit.FunSuite, UnionSafeCompare:
   test("case class with defaults") {
     val m: Made.Product {
       type Type = WithDefaults
@@ -138,9 +138,9 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val (x, y, z) = m.elems
 
-    assertEquals[Any, Any](x.default, None)
-    assertEquals[Any, Any](y.default, null)
-    assertEquals[Any, Any](z.default, NotExists)
+    assertEquals(x.default, None)
+    assertEquals(y.default, null)
+    assertEquals(z.default, NotExists)
   }
 
   test("@optionalParam priority") {
@@ -149,11 +149,11 @@ class MadeDefaultsTest extends munit.FunSuite:
     val (a, b) = m.elems
 
     // @whenAbsent(Some(42)) should take priority over @optionalParam
-    assertEquals[Any, Any](a.default, Some(42))
+    assertEquals(a.default, Some(42))
     // @optionalParam should take priority over Scala default None
     // Wait, let's check the code:
     // fromWhenAbsent orElse fromOptionalParam orElse fromDefaultValue
-    assertEquals[Any, Any](b.default, None)
+    assertEquals(b.default, None)
   }
 
   test("generic case class with Scala default") {
@@ -188,7 +188,7 @@ class MadeDefaultsTest extends munit.FunSuite:
 
     val m = Made.derived[WithCustomOptional]
     val x *: EmptyTuple = m.elems
-    assertEquals[Any, Any](x.default, CustomOpt("none"))
+    assertEquals(x.default, CustomOpt("none"))
   }
 
   test("mutable default is fresh on every access, not shared") {

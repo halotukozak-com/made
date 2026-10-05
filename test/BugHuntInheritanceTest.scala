@@ -4,7 +4,7 @@ import halotukozak.made.annotation.*
 
 import scala.annotation.StaticAnnotation
 
-class BugHuntInheritanceTest extends munit.FunSuite:
+class BugHuntInheritanceTest extends munit.FunSuite, UnionSafeCompare:
   import BugHuntInheritanceTest.*
 
   test("@mongoId aggregate annotation declared on a parent trait propagates to child field") {
@@ -16,7 +16,7 @@ class BugHuntInheritanceTest extends munit.FunSuite:
   test("@whenAbsent on a parent trait member is honoured on the child case class field") {
     val m = Made.derived[ChildWithDefault]
     val n *: EmptyTuple = m.elems
-    assertEquals[Any, Any](n.default, 42)
+    assertEquals(n.default, 42)
   }
 
   test("MetaAnnotation declared on a parent trait shows up in child Metadata") {
