@@ -6,6 +6,18 @@ on:
   pull_request:
     branches: [ main ]
 
+# The -Wall warnings are passed here rather than in each repo's project.scala so that only CI pays for
+# them, as in the Mill-built libraries, where build.mill adds -Wall when CI is set. They're spelled out
+# instead of -Wall because -Wall also implies -Wsafe-init, which nothing can switch off afterwards, and
+# the init checker never terminates on mrpc; commons and made enable -Wsafe-init in project.scala.
+# -Wshadow:type-parameter-shadow is left out too: it mostly flags refinement members such as
+# `type Of[T] = Made { type Type = T }` shadowing an imported scala.quoted.Type.
+env:
+  WALL: >-
+    -O -Wvalue-discard -O -Wnonunit-statement -O -Wenum-comment-discard -O -Wimplausible-patterns
+    -O -WunstableInlineAccessors -O -Wtostring-interpolated -O -Wrecurse-with-default -O -Wwrong-arrow
+    -O -Winfer-union -O -Wunused:all -O -Wshadow:private-shadow
+
 jobs:
   lint:
     name: Scalafmt
@@ -41,7 +53,7 @@ jobs:
       - name: Run tests
         # Coverage is recorded only for production sources; tests were previously
         # measured as 100%-covered and inflated the reported number.
-        run: scala-cli --power test . --exclude benchmark -O -coverage-out:./.scoverage -O '-coverage-exclude-files:.*test/.*'
+        run: scala-cli --power test . --exclude benchmark $WALL -O -coverage-out:./.scoverage -O '-coverage-exclude-files:.*test/.*'
       - name: Generate coverage
         run: scala-cli .scoverage/report.sc
       - uses: codecov/codecov-action@v7
@@ -78,7 +90,7 @@ jobs:
             scala-build-${{ matrix.platform }}-
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Compile
-        run: scala-cli --power compile . --exclude benchmark --platform ${{ matrix.platform }} ${{ matrix.args }}
+        run: scala-cli --power compile . --exclude benchmark $WALL --platform ${{ matrix.platform }} ${{ matrix.args }}
 
   # JVM is covered by the `test` job above (with coverage/docs); this just runs
   # the same suite on the other targets to catch platform-specific regressions.
@@ -106,4 +118,4 @@ jobs:
             scala-build-${{ matrix.platform }}-
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Run tests
-        run: scala-cli --power test . --exclude benchmark --platform ${{ matrix.platform }} ${{ matrix.args }}
+        run: scala-cli --power test . --exclude benchmark $WALL --platform ${{ matrix.platform }} ${{ matrix.args }}
