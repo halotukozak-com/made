@@ -42,8 +42,7 @@ field are annotated literally), the result narrows all the way to `A` and `.valu
 `.get`/`.map` unwrapping.
 
 When presence isn't known until the call site sees a concrete field — e.g. inside code that's generic over which
-element it's looking at — the result narrows to `A | NotExists` instead, and a match against `NotExists` (or the
-`.exists` / `.notExists` extension) recovers `A`:
+element it's looking at — the result narrows to `A | NotExists` instead, and a match against `NotExists` recovers `A`:
 
 ```scala
 import halotukozak.made.*

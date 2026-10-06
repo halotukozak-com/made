@@ -8,7 +8,8 @@ order: 3
 This guide explains how M&DE resolves default values for product fields during derivation. When you derive a type class
 that constructs product instances from partial data - a JSON decoder, a config loader, a builder - you need to know
 which fields have fallback values and what those values are. M&DE makes this available through `MadeFieldElem.default`,
-a method on each field element that returns `Type | NotExists` resolved at compile time.
+a method on each field element whose static type, `MadeFieldElem.Default`, is the field's `Type` when a default
+exists and `NotExists` when it does not.
 
 The default value for each field is determined by a three-level priority chain. The M&DE macro inspects annotations and
 constructor signatures at compile time, selects the highest-priority source, and bakes the result into the field
@@ -199,3 +200,32 @@ The `User` type has a constructor default of `25` for `age` and optional address
 `"name"`, the derivation falls back to `elem.default` (which is `25` and `None`) and constructs
 `User("Alice", 25)`. Without the default, calling`fromMap(Map("name" -> "Alice"))` would throw an
 `IllegalArgumentException`.
+
+## Checking for a Default at Compile Time
+
+The derivation above finds a missing default at run time. Each field element also carries a `Default` type member,
+refined by the macro to the field's `Type` when a default exists and to `NotExists` when it does not (generated
+members always have `Default = NotExists`). Because `default` returns `Default`, an `inline match` on it reduces
+statically, so inline code can reject a field without a default during compilation.
+
+The following example collects every field's default into a tuple and reports a compile error naming the first field
+that has none.
+
+```scala
+import halotukozak.made.*
+import scala.compiletime.*
+
+transparent inline def defaults[Es <: Tuple](elems: Es): Tuple = inline erasedValue[Es] match
+  case _: (head *: tail) =>
+    val nonEmpty = elems.asInstanceOf[head *: tail]
+    inline nonEmpty.head.asInstanceOf[head & MadeFieldElem].default match
+      case _: NotExists => error("No default value for " + constValue[MadeElem.ExtractLabel[head]])
+      case default => default *: defaults(nonEmpty.tail)
+  case _: EmptyTuple => EmptyTuple
+
+case class Point(x: Int = 0, y: Int = 0)
+case class Named(name: String, size: Int = 1)
+
+assert(defaults(Made.derived[Point].elems) == (0, 0))
+// defaults(Made.derived[Named].elems)  // error: No default value for name
+```

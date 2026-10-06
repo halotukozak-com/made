@@ -16,11 +16,13 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "id"
         type Metadata = EmptyTuple
         type OuterType = WithList
+        type Default = NotExists
       } *: MadeFieldElem {
         type Type = List[String]
         type Label = "items"
         type Metadata = EmptyTuple
         type OuterType = WithList
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[WithList]
 
@@ -39,6 +41,7 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "data"
         type Metadata = EmptyTuple
         type OuterType = WithMap
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[WithMap]
   }
@@ -51,11 +54,13 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "tags"
         type Metadata = EmptyTuple
         type OuterType = WithSetAndVector
+        type Default = NotExists
       } *: MadeFieldElem {
         type Type = Vector[Double]
         type Label = "scores"
         type Metadata = EmptyTuple
         type OuterType = WithSetAndVector
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[WithSetAndVector]
   }
@@ -82,6 +87,7 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "inner"
         type Metadata = EmptyTuple
         type OuterType = CDSOuter
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[CDSOuter]
   }
@@ -99,6 +105,7 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "items"
         type Metadata = EmptyTuple
         type OuterType = WithOptionalList
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[WithOptionalList]
   }
@@ -110,6 +117,7 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "value"
         type Metadata = EmptyTuple
         type OuterType = NestedOption
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[NestedOption]
   }
@@ -123,6 +131,7 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "pair"
         type Metadata = EmptyTuple
         type OuterType = WithTuple
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[WithTuple]
   }
@@ -142,6 +151,7 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "result"
         type Metadata = EmptyTuple
         type OuterType = WithEither
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[WithEither]
   }
@@ -219,11 +229,13 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "first"
         type Metadata = EmptyTuple
         type OuterType = CDSPair[String, Int]
+        type Default = NotExists
       } *: MadeFieldElem {
         type Type = Int
         type Label = "second"
         type Metadata = EmptyTuple
         type OuterType = CDSPair[String, Int]
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[CDSPair[String, Int]]
   }
@@ -238,6 +250,7 @@ class ComplexDataStructuresTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "value"
         type Metadata = EmptyTuple
         type OuterType = Bounded[List[Int]]
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[Bounded[List[Int]]]
   }

@@ -44,13 +44,13 @@ class GetAnnotationTypeParamTest extends munit.FunSuite:
     val mirror = Made.derived[Annotated]
     // Annot["foo"] is not a subtype of the invariant Annot[String], so the lookup's
     // `annot.tpe <:< TypeRepr.of[A]` check fails and the annotation is reported as absent.
-    val a: NotExists.type = mirror.getAnnotation[Annot[String]]
+    val a: NotExists = mirror.getAnnotation[Annot[String]]
     assertEquals(a, NotExists)
   }
 
   test("invariant type parameter: querying with a mismatched literal does not find the annotation") {
     val mirror = Made.derived[Annotated]
-    val a: NotExists.type = mirror.getAnnotation[Annot["bar"]]
+    val a: NotExists = mirror.getAnnotation[Annot["bar"]]
     assertEquals(a, NotExists)
   }
 

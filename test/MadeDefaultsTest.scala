@@ -12,16 +12,19 @@ class MadeDefaultsTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "x"
         type Metadata = EmptyTuple
         type OuterType = WithDefaults
+        type Default = NotExists
       } *: MadeFieldElem {
         type Type = String
         type Label = "y"
         type Metadata = EmptyTuple
         type OuterType = WithDefaults
+        type Default = String
       } *: MadeFieldElem {
         type Type = Boolean
         type Label = "z"
         type Metadata = EmptyTuple
         type OuterType = WithDefaults
+        type Default = Boolean
       } *: EmptyTuple
     } = Made.derived[WithDefaults]
 
@@ -42,11 +45,13 @@ class MadeDefaultsTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "a"
         type Metadata = EmptyTuple
         type OuterType = AllDefaults
+        type Default = Int
       } *: MadeFieldElem {
         type Type = String
         type Label = "b"
         type Metadata = EmptyTuple
         type OuterType = AllDefaults
+        type Default = String
       } *: EmptyTuple
     } = Made.derived[AllDefaults]
 
@@ -66,11 +71,13 @@ class MadeDefaultsTest extends munit.FunSuite, UnionSafeCompare:
         type Label = "required"
         type Metadata = EmptyTuple
         type OuterType = MixedDefaults
+        type Default = NotExists
       } *: MadeFieldElem {
         type Type = String
         type Label = "optional"
         type Metadata = EmptyTuple
         type OuterType = MixedDefaults
+        type Default = String
       } *: EmptyTuple
     } = Made.derived[MixedDefaults]
 

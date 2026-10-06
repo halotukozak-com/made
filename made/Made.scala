@@ -174,7 +174,19 @@ sealed trait MadeFieldElem extends MadeElem:
    *
    * @return the default value if available, `NotExists` otherwise
    */
-  def default: Type | NotExists
+  def default: Default
+
+  /**
+   * Static type of [[default]]: `Type` when the field has a default, `NotExists` when it does not.
+   *
+   * Lets inline code decide at compile time whether a default exists:
+   * {{{
+   * inline field.default match
+   *   case _: NotExists => compiletime.error("no default")
+   *   case default      => default
+   * }}}
+   */
+  type Default <: Type | NotExists
 
 object MadeFieldElem:
   type Of[T] = MadeFieldElem { type Type = T }
@@ -228,6 +240,9 @@ object MadeSubSingletonElem:
  * @see [[halotukozak.made.annotation.generated]]
  */
 sealed trait GeneratedMadeElem extends MadeFieldElem:
+  /** Always `NotExists`; generated members have no constructor defaults. */
+  final type Default = NotExists
+
   /** Always `NotExists`; generated members have no constructor defaults. */
   final def default: NotExists = NotExists
 
@@ -343,21 +358,42 @@ object Made:
     def madeFieldOf(field: Symbol): Expr[MadeFieldElem] =
       (field.termRef.widen.asType, labelTypeOf(field, field.name), metaTypeOf(field)).runtimeChecked match
         case ('[fieldType], '[type elemLabel <: String; elemLabel], '[type fieldMeta <: Tuple; fieldMeta]) =>
-          '{
-            new FieldElemImpl[T, fieldType](
-              outer => ${ '{ outer }.asTerm.select(field).asExprOf[fieldType] },
-              ${ defaultOf[fieldType](0, field) },
-            ).asInstanceOf[
-              MadeFieldElem {
-                type Type = fieldType
-                type Label = elemLabel
-                type Metadata = fieldMeta
-                type OuterType = T
-              },
-            ]
-          }
+          fieldElemOf[fieldType, elemLabel, fieldMeta](
+            outer => outer.asTerm.select(field).asExprOf[fieldType],
+            defaultOf[fieldType](0, field),
+          )
 
-    def defaultOf[E: Type](index: Int, symbol: Symbol): Expr[E | NotExists] = {
+    // `Default` is refined to `E` or `NotExists`, so inline code can tell statically whether a default exists.
+    def fieldElemOf[E: Type, L <: String: Type, M <: Tuple: Type](
+      getter: Expr[T] => Quotes ?=> Expr[E],
+      default: Option[Expr[E]],
+    ): Expr[MadeFieldElem] = default match
+      case Some(default) =>
+        '{
+          new FieldElemImpl[T, E, E](outer => ${ getter('outer) }, $default).asInstanceOf[
+            MadeFieldElem {
+              type Type = E
+              type Label = L
+              type Metadata = M
+              type OuterType = T
+              type Default = E
+            },
+          ]
+        }
+      case None =>
+        '{
+          new FieldElemImpl[T, E, NotExists](outer => ${ getter('outer) }, NotExists).asInstanceOf[
+            MadeFieldElem {
+              type Type = E
+              type Label = L
+              type Metadata = M
+              type OuterType = T
+              type Default = NotExists
+            },
+          ]
+        }
+
+    def defaultOf[E: Type](index: Int, symbol: Symbol): Option[Expr[E]] = {
       def fromWhenAbsent = symbol
         .getAnnotationOf[whenAbsent[?]]
         .map:
@@ -382,7 +418,7 @@ object Made:
               case args => ref.appliedToTypes(args)
             applied.asExprOf[E]
 
-      fromWhenAbsent.orElse(fromOptionalParam).orElse(fromDefaultValue).getOrElse('{ NotExists })
+      fromWhenAbsent.orElse(fromOptionalParam).orElse(fromDefaultValue)
     }
 
     def newTFrom(args: List[Expr[?]]): Expr[T] =
@@ -395,9 +431,7 @@ object Made:
       metaTypeOf(tSymbol),
       labelTypeOf(tSymbol, nameOf[T]),
       Expr.ofRefinedTupleFixed(generatedElems.toList),
-      // Ascribed to the precise singleton type: `exists`/`notExists` are `inline match`-based and
-      // need the scrutinee's static type to be exactly `NotExists.type`, not the broader sealed trait.
-      if tCompanion.isNoSymbol then '{ NotExists: NotExists.type } else Ref(tCompanion).asExprOf[AnyRef],
+      if tCompanion.isNoSymbol then '{ NotExists } else Ref(tCompanion).asExprOf[AnyRef],
     ).runtimeChecked match {
       case (
             '[type meta <: Tuple; meta],
@@ -415,7 +449,7 @@ object Made:
                       type Label = label
                       type Metadata = meta
                       type GeneratedElems = generatedElems
-                      type Companion = NotExists.type
+                      type Companion = NotExists
                     },
                   ]
               }
@@ -427,7 +461,7 @@ object Made:
                       type Label = label
                       type Metadata = meta
                       type GeneratedElems = generatedElems
-                      type Companion = NotExists.type
+                      type Companion = NotExists
                     },
                   ]
               }
@@ -545,19 +579,10 @@ object Made:
                       )
                     (labelTypeOf(fieldSymbol, fieldSymbol.name), metaTypeOf(fieldSymbol)).runtimeChecked match
                       case ('[type elemLabel <: String; elemLabel], '[type meta <: Tuple; meta]) =>
-                        val expr = '{
-                          new FieldElemImpl[T, fieldTpe](
-                            outer => ${ '{ outer }.asTerm.select(fieldSymbol).asExprOf[fieldTpe] },
-                            ${ defaultOf[fieldTpe](index, fieldSymbol) },
-                          ).asInstanceOf[
-                            MadeFieldElem {
-                              type Type = fieldTpe
-                              type Label = elemLabel
-                              type Metadata = meta
-                              type OuterType = T
-                            },
-                          ]
-                        }
+                        val expr = fieldElemOf[fieldTpe, elemLabel, meta](
+                          outer => outer.asTerm.select(fieldSymbol).asExprOf[fieldTpe],
+                          defaultOf[fieldTpe](index, fieldSymbol),
+                        )
                         (exprs :+ expr, names :+ (typeToString[elemLabel], fieldSymbol.name))
                   case _ => wontHappen
             else
@@ -567,20 +592,11 @@ object Made:
                 .zipWithIndex
                 .foldLeft((Vector.empty[Expr[?]], Vector.empty[(label: String, original: String)])):
                   case ((exprs, names), (('[fieldTpe], '[type mirrorLabel <: String; mirrorLabel]), index)) =>
-                    val expr = '{
-                      new FieldElemImpl[T, fieldTpe](
-                        outer =>
-                          outer.asInstanceOf[scala.Product].productElement(${ Expr(index) }).asInstanceOf[fieldTpe],
-                        NotExists,
-                      ).asInstanceOf[
-                        MadeFieldElem {
-                          type Type = fieldTpe
-                          type Label = mirrorLabel
-                          type Metadata = EmptyTuple
-                          type OuterType = T
-                        },
-                      ]
-                    }
+                    val expr = fieldElemOf[fieldTpe, mirrorLabel, EmptyTuple](
+                      outer =>
+                        '{ $outer.asInstanceOf[scala.Product].productElement(${ Expr(index) }).asInstanceOf[fieldTpe] },
+                      None,
+                    )
                     (exprs :+ expr, names :+ (typeToString[mirrorLabel], typeToString[mirrorLabel]))
                   case _ => wontHappen
 
@@ -778,13 +794,14 @@ object Made:
     /** A transparent type's single [[Elems]] entry is a [[MadeFieldElem]]; refines `containsOnly MadeElem`. */
     inline given Elems containsOnly MadeFieldElem = containsOnly.refl
 
-private final class FieldElemImpl[Outer, Elem](getter: Outer => Elem, elemDefault: => Elem | NotExists)
+private final class FieldElemImpl[Outer, Elem, D <: Elem | NotExists](getter: Outer => Elem, elemDefault: => D)
   extends MadeFieldElem:
   type OuterType = Outer
   type Type = Elem
+  type Default = D
   def apply(outer: Outer): Elem = getter(outer)
   // by-name: a mutable default (e.g. `mutable.Set.empty`) must yield a fresh instance on every access.
-  def default: Elem | NotExists = elemDefault
+  def default: D = elemDefault
 
 @publicInBinary private[made] object SubElemImpl extends MadeSubElem
 
@@ -825,8 +842,8 @@ private final class MadeSumImpl[T, E <: Tuple, G <: Tuple, C <: AnyRef | NotExis
 private final class MadeSingletonImpl[S, G <: Tuple](val value: S, val generatedElems: G) extends Made.Singleton:
   type Type = S
   type GeneratedElems = G
-  type Companion = NotExists.type
-  val companion: NotExists.type = NotExists
+  type Companion = NotExists
+  val companion: NotExists = NotExists
 
 private final class MadeTransparentImpl[T, U, E <: MadeElem.Of[U] *: EmptyTuple, C <: AnyRef | NotExists](
   val elems: E,

@@ -108,23 +108,23 @@ class FieldAnnotationTest extends munit.FunSuite:
     val mirror = Made.derived[AnnotatedFields]
     val x *: y *: _ *: EmptyTuple = mirror.elems
     val s: Marker = x.getAnnotation[Marker]
-    val n: NotExists.type = y.getAnnotation[Marker]
+    val n: NotExists = y.getAnnotation[Marker]
     assert(s.isInstanceOf[Marker])
     assertEquals(n, NotExists)
   }
 
   // --- Negative-compile checks: narrowing is exact, not just "wide enough" ---
   //
-  // The `val s: Marker = ...` / `val n: NotExists.type = ...` tests above only prove the actual
+  // The `val s: Marker = ...` / `val n: NotExists = ...` tests above only prove the actual
   // type is a *subtype* of the ascription. These prove the other direction — that the macro
-  // doesn't widen to `Marker | NotExists` (which would also satisfy a `Marker` or `NotExists.type`
+  // doesn't widen to `Marker | NotExists` (which would also satisfy a `Marker` or `NotExists`
   // ascription's dual, `Any`), by checking that swapping the two ascriptions fails to typecheck.
 
   test("getAnnotation on a present field does not typecheck as NotExists") {
     val errors = typeCheckErrors("""
       val mirror = Made.derived[AnnotatedFields]
       val x *: _ *: _ *: EmptyTuple = mirror.elems
-      val n: NotExists.type = x.getAnnotation[Marker]
+      val n: NotExists = x.getAnnotation[Marker]
     """)
     assert(errors.nonEmpty, "expected a type mismatch: a present annotation narrows to Marker, not NotExists")
   }
@@ -178,7 +178,7 @@ class FieldAnnotationTest extends munit.FunSuite:
 
   test("getAnnotations returns tuple narrowed per-element to the annotation type or NotExists") {
     val mirror = Made.derived[AnnotatedFields]
-    val opts: (Marker, NotExists.type, Marker) = mirror.elems.getAnnotations[Marker]
+    val opts: (Marker, NotExists, Marker) = mirror.elems.getAnnotations[Marker]
     assert(opts._1.isInstanceOf[Marker])
     assertEquals(opts._2, NotExists)
     assert(opts._3.isInstanceOf[Marker])
