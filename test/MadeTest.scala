@@ -14,11 +14,13 @@ class MadeTest extends munit.FunSuite:
         type Label = "id"
         type Metadata = EmptyTuple
         type OuterType = SimpleCaseClass
+        type Default = NotExists
       } *: MadeFieldElem {
         type Type = String
         type Label = "name"
         type Metadata = EmptyTuple
         type OuterType = SimpleCaseClass
+        type Default = NotExists
       } *: EmptyTuple
       type Metadata = EmptyTuple
     } = Made.derived[SimpleCaseClass]
@@ -43,6 +45,7 @@ class MadeTest extends munit.FunSuite:
         type Label = "a"
         type Metadata = EmptyTuple
         type OuterType = Box[Int]
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[Box[Int]]
   }
@@ -104,6 +107,7 @@ class MadeTest extends munit.FunSuite:
         type Label = "int"
         type Metadata = EmptyTuple
         type OuterType = TransparentClass
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[TransparentClass]
 
@@ -204,6 +208,7 @@ class MadeTest extends munit.FunSuite:
         type Label = "str"
         type Metadata = EmptyTuple
         type OuterType = HasGenerated
+        type Default = NotExists
       } *: EmptyTuple
       type GeneratedElems = GeneratedMadeElem {
         type OuterType = HasGenerated
@@ -227,6 +232,7 @@ class MadeTest extends munit.FunSuite:
         type Label = "fa"
         type Metadata = EmptyTuple
         type OuterType = HKBox[List]
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[HKBox[List]]
   }
@@ -258,6 +264,7 @@ class MadeTest extends munit.FunSuite:
         type Label = "r"
         type Metadata = EmptyTuple
         type OuterType = Recursive.Next
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[Recursive.Next]
   }
@@ -278,16 +285,19 @@ class MadeTest extends munit.FunSuite:
         type Label = "value"
         type Metadata = EmptyTuple
         type OuterType = RecTree
+        type Default = NotExists
       } *: MadeFieldElem {
         type Type = Option[RecTree]
         type Label = "left"
         type Metadata = EmptyTuple
         type OuterType = RecTree
+        type Default = NotExists
       } *: MadeFieldElem {
         type Type = Option[RecTree]
         type Label = "right"
         type Metadata = EmptyTuple
         type OuterType = RecTree
+        type Default = NotExists
       } *: EmptyTuple
     } = Made.derived[RecTree]
   }
@@ -476,27 +486,25 @@ class MadeTest extends munit.FunSuite:
   test("Made companion is NotExists for a singleton object without its own companion") {
     val mirror: Made.Singleton {
       type Type = SimpleObject.type
-      type Companion = NotExists.type
+      type Companion = NotExists
     } = Made.derived[SimpleObject.type]
 
-    assert(mirror.companion.notExists)
-    assert(!mirror.companion.exists)
+    assertEquals(mirror.companion, NotExists)
   }
 
   test("Made companion is NotExists for Unit") {
     val mirror: Made.Singleton {
       type Type = Unit
-      type Companion = NotExists.type
+      type Companion = NotExists
     } = Made.derived[Unit]
 
-    assert(mirror.companion.notExists)
+    assertEquals(mirror.companion, NotExists)
   }
 
-  test("Made.companion.exists is true when a companion is present") {
+  test("Made.companion is the companion object when one is present") {
     val mirror = Made.derived[SimpleCaseClass]
 
-    assert(mirror.companion.exists)
-    assert(!mirror.companion.notExists)
+    assert(mirror.companion eq SimpleCaseClass)
   }
 
   test("Made preserves the companion object's own type members") {

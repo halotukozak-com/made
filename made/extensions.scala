@@ -20,9 +20,8 @@ extension [M <: Tuple](self: { type Metadata = M })(using inline ev: M containsO
    *
    * Transparent inline - resolved at compile time, so at a concrete call site the result already
    * narrows to the annotation's own type (with `.value` etc. available directly, no `.get`/`.map`)
-   * or to `NotExists.type`, never a widened `A | NotExists`. Only code generic over which element
-   * it inspects sees the `A | NotExists` union; it recovers `A` by matching on [[NotExists]] or via
-   * the `.exists` / `.notExists` extension.
+   * or to `NotExists`, never a widened `A | NotExists`. Only code generic over which element
+   * it inspects sees the `A | NotExists` union; it recovers `A` by matching on [[NotExists]].
    * `A` must extend [[halotukozak.made.annotation.MetaAnnotation]].
    */
   transparent inline def getAnnotation[A <: Annotation]: A | NotExists = ${ getAnnotationImpl[A, M] }
@@ -71,7 +70,7 @@ extension (es: Tuple)(using inline ev: es.type containsOnly { type Metadata <: T
 
   /**
    * Per-element [[getAnnotation]] over a tuple whose entries each declare a `Metadata` type member.
-   * Each result slot narrows independently to the annotation type or to `NotExists.type`, never to
+   * Each result slot narrows independently to the annotation type or to `NotExists`, never to
    * a common `A | NotExists`.
    */
   transparent inline def getAnnotations[A <: Annotation]: Tuple.Map[es.type, [_] =>> A | NotExists] =

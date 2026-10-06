@@ -1,14 +1,8 @@
 package halotukozak
 package made
 
-sealed trait NotExists
+/** Marks an absent value, e.g. a field without a default or a type without a companion. */
+case object NotExists
 
-case object NotExists extends NotExists
-
-extension (any: AnyRef | NotExists) {
-  transparent inline def exists: Boolean = inline any match
-    case NotExists => false
-    case _ => true
-
-  transparent inline def notExists: Boolean = !any.exists
-}
+/** The singleton type of [[NotExists]], so `inline match` on `case NotExists` reduces statically. */
+type NotExists = NotExists.type
