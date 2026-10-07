@@ -22,11 +22,16 @@
 //   newClasspath  pathSeparator-joined dependency classpath of the new JAR
 // Either classpath may include its JAR or not; the JDK's java.base is added.
 //
-// Exit code: 0 if TASTy-compatible, 1 otherwise.
+// Optional `.mima/tasty-private-packages` (one package per line, `#` comments): skipped by
+// tasty-mima. List only packages no downstream TASTy can reference (types, defaults, aliases).
+//
+// Exit code: 0 compatible, 2 incompatible, anything else = the check failed to run.
 
 import java.io.File
 import java.net.URI
-import java.nio.file.{FileSystems, Path, Paths}
+import java.nio.file.{Files, FileSystems, Path, Paths}
+
+import scala.jdk.CollectionConverters.*
 
 import tastymima.TastyMiMa
 import tastymima.intf.Config
@@ -40,12 +45,25 @@ import tastymima.intf.Config
 
   val oldEntry = Paths.get(oldJar).toAbsolutePath
   val newEntry = Paths.get(newJar).toAbsolutePath
+  for jar <- List(oldEntry, newEntry) do require(Files.isRegularFile(jar), s"not a file: $jar")
 
-  val problems = new TastyMiMa(new Config)
+  val privatePackagesFile = Paths.get(".mima/tasty-private-packages")
+  val privatePackages =
+    if !Files.exists(privatePackagesFile) then Nil
+    else
+      Files.readAllLines(privatePackagesFile).asScala.toList
+        .map(_.takeWhile(_ != '#').trim)
+        .filter(_.nonEmpty)
+  if privatePackages.nonEmpty then
+    println(s"[tasty-mima] treating as private (from $privatePackagesFile): ${privatePackages.mkString(", ")}")
+
+  val config = new Config().withMoreArtifactPrivatePackages(privatePackages.asJava)
+
+  val problems = new TastyMiMa(config)
     .analyze(classpath(oldEntry, oldCp), oldEntry, classpath(newEntry, newCp), newEntry)
 
   if problems.isEmpty then println("[tasty-mima] backward (TASTy built against the release vs the new JAR): OK")
   else
     println(s"[tasty-mima] backward (TASTy built against the release vs the new JAR): ${problems.size} problem(s)")
     problems.foreach(p => println(s"  - ${p.getDescription}"))
-    sys.exit(1)
+    sys.exit(2)
