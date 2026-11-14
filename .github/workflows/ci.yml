@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Setup coursier cache
-        uses: coursier/cache-action@v8.2
+        uses: coursier/cache-action@v9.0
       - uses: VirtusLab/scala-cli-setup@v1
       - name: Check formatting
         # benchmark/ is a separate scala-cli build (competitor deps, JMH) —
@@ -41,7 +41,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup coursier cache
-        uses: coursier/cache-action@v8.2
+        uses: coursier/cache-action@v9.0
       - name: Cache scala-cli/Bloop incremental build
         uses: actions/cache@v6
         with:
@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Setup coursier cache
-        uses: coursier/cache-action@v8.2
+        uses: coursier/cache-action@v9.0
       - name: Cache scala-cli/Bloop incremental build
         uses: actions/cache@v6
         with:
@@ -108,7 +108,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Setup coursier cache
-        uses: coursier/cache-action@v8.2
+        uses: coursier/cache-action@v9.0
       - name: Cache scala-cli/Bloop incremental build
         uses: actions/cache@v6
         with:
