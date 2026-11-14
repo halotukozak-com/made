@@ -77,3 +77,7 @@ M&DE is inspired by:
 
 - [**AVSystem commons**](https://github.com/AVSystem/scala-commons) by [**ghik**](https://github.com/ghik)
 - [**ops-mirror**](https://github.com/bishabosha/ops-mirror) by [**bishabosha**](https://github.com/bishabosha)
+
+## License
+
+Apache License 2.0. See [LICENSE](https://github.com/halotukozak-com/made/blob/main/LICENSE) and [NOTICE](https://github.com/halotukozak-com/made/blob/main/NOTICE).
