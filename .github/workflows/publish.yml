@@ -51,6 +51,7 @@ jobs:
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       PGP_PRIVATE_KEY: ${{ secrets.PGP_PRIVATE_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+      NAME: ${{ github.event.repository.name }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -65,21 +66,21 @@ jobs:
           # 1. Reusable javadoc from JVM scaladoc (platform-agnostic API; JS scaladoc is broken).
           scala-cli --power publish . --platform jvm --signer none \
             --publish-repository "$PWD/.jvmdoc"
-          jdoc="$(find "$PWD/.jvmdoc" -name 'made_3-*-javadoc.jar' | head -1)"
+          jdoc="$(find "$PWD/.jvmdoc" -name "${NAME}_3-*-javadoc.jar" | head -1)"
 
           # 2. JS artifacts (jar/sources/pom + checksums), unsigned and without a doc JAR.
           scala-cli --power publish . --platform scala-js --js-version 1.22.0 \
             --doc=false --signer none --publish-repository "$PWD/.staging"
 
-          # 3. Inject the reused javadoc into the made_sjs1_3 coordinate.
-          dir="$(dirname "$(find "$PWD/.staging" -name 'made_sjs1_3-*.pom' | head -1)")"
+          # 3. Inject the reused javadoc into the ${NAME}_sjs1_3 coordinate.
+          dir="$(dirname "$(find "$PWD/.staging" -name "${NAME}_sjs1_3-*.pom" | head -1)")"
           ver="$(basename "$dir")"
-          cp "$jdoc" "$dir/made_sjs1_3-$ver-javadoc.jar"
+          cp "$jdoc" "$dir/${NAME}_sjs1_3-$ver-javadoc.jar"
 
           # 4. gpg-sign every artifact and ensure checksums exist (uniform; no reliance on
           #    scala-cli writing .asc into a local repo).
           printf '%s' "$PGP_PRIVATE_KEY" | gpg --batch --import
-          for f in "$dir"/made_sjs1_3-*.jar "$dir"/made_sjs1_3-*.pom; do
+          for f in "$dir"/${NAME}_sjs1_3-*.jar "$dir"/${NAME}_sjs1_3-*.pom; do
             gpg --batch --pinentry-mode loopback --passphrase "$PGP_PASSPHRASE" \
               --detach-sign --armor "$f"
             [ -f "$f.sha1" ] || sha1sum "$f" | cut -d' ' -f1 > "$f.sha1"
@@ -92,4 +93,4 @@ jobs:
           curl --fail-with-body --request POST \
             --header "Authorization: Bearer $token" \
             --form "bundle=@$RUNNER_TEMP/bundle.zip" \
-            "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC&name=made_sjs1_3"
+            "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC&name=${NAME}_sjs1_3"
