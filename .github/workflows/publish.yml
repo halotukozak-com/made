@@ -17,7 +17,7 @@ jobs:
           - platform: jvm
             args: ""
           - platform: scala-native
-            args: "--native-version 0.5.12"
+            args: "--native-version 0.5.13"
     steps:
       - uses: actions/checkout@v7
         with:
